@@ -6,8 +6,8 @@
 <title>Reçu de payement COGES Pro</title>
 
 <!-- PWA Meta -->
-<meta name="theme-color" content="#007bff">
-<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlJlXHUwMGU3dSBkZSBwYXllbWVudCBDT0dFUyIsCiAgInNob3J0X25hbWUiIjogIkNPR0VTIFJlXHUwMGU3dSIsCiAgInNob3J0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRmNmY5IiwKICAidGhlbWVfY29sb3IiOiAiIzAwN2JmZiIKfQ==">
+<meta name="theme-color" content="#0d6efd">
+<link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlJlXHUwMGU3dSBkZSBwYXllbWVudCBDT0dFUyIsCiAgInNob3J0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjZjRmgmOSIsCiAgInRoZW1lX2NvbG9yIjogIiMwZDZlZmQiCn0=">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -15,123 +15,208 @@
 
 <style>
   :root {
-    --primary: #007bff;
-    --navy: #12234a;
-    --bg: #f4f6f9;
+    --primary: #0d6efd;
+    --primary-dark: #0a58ca;
+    --secondary: #6c757d;
+    --bg: #f3f4f6;
     --card: #ffffff;
-    --text: #212529;
-    --success: #28a745;
+    --text: #1f2937;
+    --success: #198754;
     --warning: #ffc107;
     --danger: #dc3545;
     --receipt-width: 290px;
+    --radius: 10px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
-  *{box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;}
-  body { margin:0; background:var(--bg); color:var(--text); min-height:100vh; }
+  
+  * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  body { margin: 0; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 30px; }
 
+  /* HEADER */
   header {
-    background: var(--primary);
+    background: linear-gradient(135deg, #0d6efd, #0b5ed7);
     color: white;
-    padding: 14px 16px;
+    padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: sticky; top: 0; z-index: 90;
   }
-  header .menu-btn { font-size: 1.5rem; cursor: pointer; background:none; border:none; color:white; }
-  header h1 { margin:0; font-size: 1.1rem; font-weight: 600; display:flex; align-items:center; gap:8px;}
+  header .brand { display: flex; align-items: center; gap: 10px; }
+  header .brand svg { width: 32px; height: 32px; fill: white; }
+  header h1 { margin: 0; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.3px; }
+  .header-actions { display: flex; align-items: center; gap: 8px; }
+  .icon-btn { background: rgba(255,255,255,0.15); border: none; color: white; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 1rem; transition: background 0.2s; }
+  .icon-btn:hover { background: rgba(255,255,255,0.3); }
 
+  /* DRAWER (MENU NAVIGATION) */
   .drawer-overlay {
     position: fixed; top:0; left:0; width:100%; height:100%;
-    background: rgba(0,0,0,0.5); display:none; z-index:99;
+    background: rgba(0,0,0,0.5); display:none; z-index:99; backdrop-filter: blur(2px);
   }
   .drawer {
-    position: fixed; top:0; left:-280px; width:280px; height:100%;
-    background: white; z-index:100; transition: left 0.3s ease;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+    position: fixed; top:0; left:-290px; width:290px; height:100%;
+    background: white; z-index:100; transition: left 0.3s ease-out;
+    box-shadow: 2px 0 15px rgba(0,0,0,0.2);
     display: flex; flex-direction: column;
   }
   .drawer.open { left: 0; }
-  .drawer-header { background: var(--primary); color: white; padding: 20px 16px; }
-  .drawer-header h2 { margin:0; font-size: 1.2rem; }
-  .drawer-menu { list-style:none; padding:0; margin:0; overflow-y:auto; flex:1; }
-  .drawer-menu li {
-    padding: 14px 20px; display: flex; align-items: center; gap: 15px;
-    border-bottom: 1px solid #f0f0f0; cursor: pointer; font-weight: 500; font-size: 0.95rem;
+  .drawer-header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white; padding: 24px 18px; display: flex; align-items: center; gap: 12px;
   }
-  .drawer-menu li:hover { background: #f8f9fa; }
+  .drawer-header svg { width: 38px; height: 38px; fill: white; }
+  .drawer-header h2 { margin: 0; font-size: 1.15rem; }
+  .drawer-header small { opacity: 0.85; font-size: 0.78rem; }
+  .drawer-menu { list-style:none; padding: 10px 0; margin:0; overflow-y:auto; flex:1; }
+  .drawer-menu li {
+    padding: 13px 20px; display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid #f0f0f0; cursor: pointer; font-weight: 500; font-size: 0.92rem;
+    color: #4b5563; transition: all 0.2s;
+  }
+  .drawer-menu li:hover { background: #eef2ff; color: var(--primary); }
 
-  main { max-width: 500px; margin:0 auto; padding: 12px; }
-  .card { background: white; border-radius: 8px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-  .card-title { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #6c757d; margin-bottom: 10px; display:flex; justify-content:space-between; align-items:center;}
+  /* CONTENEUR PRINCIPAL & CARTES */
+  main { max-width: 520px; margin: 16px auto; padding: 0 12px; }
+  .card {
+    background: var(--card); border-radius: var(--radius); padding: 16px;
+    margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,0.03);
+  }
+  .card-title {
+    font-size: 0.85rem; font-weight: 700; text-transform: uppercase; color: #6b7280;
+    margin-bottom: 12px; display:flex; justify-content:space-between; align-items:center;
+    letter-spacing: 0.5px;
+  }
+  .header-btn-group { display: flex; gap: 6px; }
 
-  label { display:block; font-size: 0.8rem; font-weight: 700; margin: 8px 0 2px; }
-  input, select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.9rem; font-weight: 600; }
-  .row { display:flex; gap:8px; } .row > div { flex:1; }
+  /* FORMULAIRES & INPUTS */
+  label { display: block; font-size: 0.8rem; font-weight: 700; margin: 10px 0 3px; color: #374151; }
+  input, select {
+    width: 100%; padding: 9px 12px; border: 1px solid #d1d5db; border-radius: 7px;
+    font-size: 0.9rem; font-weight: 600; background: #fafafa; transition: border-color 0.2s, background 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--primary); outline: none; background: #fff; }
+  .row { display: flex; gap: 10px; } .row > div { flex: 1; }
+
+  /* CONTAINER D'APERÇU INITIAL */
+  .preview-container {
+    margin: 15px auto;
+    text-align: center;
+  }
 
   /* TICKET D'IMPRESSION */
   .receipt {
-    background: white; border: 1px dashed #aaa; padding: 12px;
-    font-family: 'Courier New', monospace; font-size: 0.8rem; line-height: 1.3;
-    width: var(--receipt-width); margin: 0 auto; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  }
-  .receipt.highlight {
-    border-color: var(--primary);
-    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+    background: white; border: 1px dashed #999; padding: 14px;
+    font-family: 'Courier New', Courier, monospace; font-size: 0.82rem; line-height: 1.35;
+    width: var(--receipt-width); margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: all 0.3s ease; border-radius: 4px; text-align: left;
   }
   .receipt-center { text-align: center; }
   .receipt-bold { font-weight: bold; }
-  .receipt-logo { max-width: 70px; max-height: 70px; display:block; margin: 0 auto 6px; }
+  .receipt-logo-svg { width: 60px; height: 60px; display: block; margin: 0 auto 6px; }
+  .receipt-logo-img { max-width: 70px; max-height: 70px; display: block; margin: 0 auto 6px; }
   .badge-status {
-    text-align: center; font-weight: bold; padding: 4px; margin: 6px 0; border: 1px solid #000;
+    text-align: center; font-weight: bold; padding: 5px; margin: 8px 0; border: 1px solid #000; letter-spacing: 1px;
   }
-  .status-solder { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-  .status-avance { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
+  .status-solder { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+  .status-avance { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
 
   /* BOUTONS */
   .btn {
-    width: 100%; padding: 11px; border: none; border-radius: 6px;
+    width: 100%; padding: 11px 14px; border: none; border-radius: 7px;
     font-weight: 700; cursor: pointer; margin-top: 8px; font-size: 0.88rem;
     display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform 0.1s, opacity 0.2s, background 0.2s;
   }
-  .btn-sm { padding: 6px 10px; font-size: 0.8rem; width: auto; margin:0; }
+  .btn:active { transform: scale(0.98); }
+  .btn-sm { padding: 6px 10px; font-size: 0.78rem; width: auto; margin:0; }
   .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-dark); }
   .btn-success { background: var(--success); color: white; }
   .btn-danger { background: var(--danger); color: white; }
   .btn-warning { background: var(--warning); color: #212529; }
-  .btn-secondary { background: #e9ecef; color: #495057; }
+  .btn-secondary { background: #e5e7eb; color: #374151; }
+  .btn-secondary:hover { background: #d1d5db; }
   
   .btn-new-receipt {
-    background: linear-gradient(135deg, #17a2b8, #007bff);
-    color: white;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    background: linear-gradient(135deg, #0dcaf0, #0d6efd);
+    color: white; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   }
-  .btn-new-receipt:hover { opacity: 0.9; }
 
-  #status { text-align:center; font-size: 0.82rem; font-weight:700; margin-top: 8px; min-height: 1.2em; }
+  #status { text-align: center; font-size: 0.85rem; font-weight: 700; margin-top: 10px; min-height: 1.2em; }
 
-  /* TABLEAU BDD */
-  .db-table { width:100%; border-collapse:collapse; font-size:0.78rem; margin-top:10px; }
-  .db-table th, .db-table td { border:1px solid #dee2e6; padding:6px 4px; text-align:left; }
-  .db-table th { background:#f8f9fa; }
-  .actions-cell { display:flex; gap:4px; }
-  
-  .class-config-box { background:#f8f9fa; border:1px solid #e0e0e0; border-radius:6px; padding:10px; margin-bottom:10px; }
+  /* TABLEAUX & STATS */
+  .db-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+  .db-table th, .db-table td { border: 1px solid #e5e7eb; padding: 7px 6px; text-align: left; }
+  .db-table th { background: #f9fafb; font-weight: 700; color: #4b5563; }
+  .actions-cell { display: flex; gap: 4px; }
+  .class-config-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+
+  /* ECRAN DE CONNEXION LOGIN / MOT DE PASSE */
+  .lock-screen {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    background: #0d1b2a; z-index: 9999; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: white; padding: 20px;
+  }
+  .lock-card {
+    background: #1b263b; padding: 28px 22px; border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: center; max-width: 330px; width: 100%;
+  }
+  .lock-card svg { width: 50px; height: 50px; fill: #0d6efd; margin-bottom: 8px; }
+  .login-input-group { margin: 15px 0; text-align: left; }
+  .login-input-group label { color: #a0aec0; margin-bottom: 4px; font-size: 0.75rem; }
+  .login-input-group input { background: #0d1b2a; color: white; border: 1px solid #2d3748; }
+  .login-input-group input:focus { border-color: #0d6efd; }
+  .auth-error { color: #ff6b6b; font-size: 0.8rem; margin-top: 8px; display: none; text-align: center; }
 </style>
 </head>
 <body>
 
+<!-- ECRAN D'AUTHENTIFICATION LOGIN & MOT DE PASSE -->
+<div class="lock-screen" id="lockScreen" style="display: none;">
+  <div class="lock-card">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
+    <h2 style="margin: 0 0 4px 0; font-size: 1.3rem;">Connexion COGES</h2>
+    <small style="color: #a0aec0;">Entrez vos identifiants pour continuer</small>
+    
+    <div class="login-input-group">
+      <label>Nom d'utilisateur / Login</label>
+      <input type="text" id="loginUsername" placeholder="Ex: admin" autocomplete="off">
+      
+      <label style="margin-top:10px;">Mot de passe</label>
+      <input type="password" id="loginPassword" placeholder="••••••••">
+    </div>
+
+    <div class="auth-error" id="authError">Identifiant ou mot de passe incorrect</div>
+    
+    <button class="btn btn-primary" onclick="unlockApp()" style="margin-top:15px;">🔓 Se connecter</button>
+  </div>
+</div>
+
+<!-- EN-TÊTE PRINCIPALE -->
 <header>
-  <button class="menu-btn" onclick="toggleDrawer()">☰</button>
-  <h1>📑 Reçu COGES Pro</h1>
+  <div class="brand">
+    <button class="icon-btn" onclick="toggleDrawer()">☰</button>
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1.4c0-2 4-3.1 6-3.1s6 1.1 6 3.1V19z"/></svg>
+    <h1>COGES Pro</h1>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" id="lockAppBtn" onclick="lockAppManually()" title="Verrouiller" style="display:none;">🔒</button>
+  </div>
 </header>
 
+<!-- DRAWER OVERLAY -->
 <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+
+<!-- MENU LATÉRAL -->
 <div class="drawer" id="drawer">
   <div class="drawer-header">
-    <h2>Reçu COGES Pro</h2>
-    <small>Gestion & Impression Thermique</small>
+    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm0 4c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm6 12H6v-1.4c0-2 4-3.1 6-3.1s6 1.1 6 3.1V19z"/></svg>
+    <div>
+      <h2>COGES Pro</h2>
+      <small>Gestion & Impression Thermique</small>
+    </div>
   </div>
   <ul class="drawer-menu">
     <li onclick="showSection('creer')">📝 Créer un reçu</li>
@@ -145,12 +230,16 @@
 
 <main>
 
-  <!-- SAISIE / CRÉATION -->
+  <!-- SAISIE / CRÉATION DE REÇU -->
   <div id="sec-creer">
     <div class="card">
       <div class="card-title">
         <span>Informations Reçu</span>
-        <button class="btn btn-new-receipt btn-sm" onclick="resetForm()">✨ Nouveau reçu</button>
+        <!-- BOUTONS CÔTE À CÔTE -->
+        <div class="header-btn-group">
+          <button class="btn btn-secondary btn-sm" onclick="scrollToPreview()">👁️ Aperçu</button>
+          <button class="btn btn-new-receipt btn-sm" onclick="resetForm()">✨ Nouveau reçu</button>
+        </div>
       </div>
 
       <div class="row">
@@ -177,8 +266,8 @@
       </div>
 
       <div class="row">
-        <div><label>Enseignant (Automatique)</label><input id="maitre" type="text" readonly style="background:#e9ecef;"></div>
-        <div><label>Contact (Automatique)</label><input id="contact" type="text" readonly style="background:#e9ecef;"></div>
+        <div><label>Enseignant (Auto)</label><input id="maitre" type="text" readonly style="background:#e9ecef;"></div>
+        <div><label>Contact (Auto)</label><input id="contact" type="text" readonly style="background:#e9ecef;"></div>
       </div>
 
       <div class="row">
@@ -188,26 +277,19 @@
       
       <label>Reste à Payer (Modifiable)</label>
       <input id="reste" type="number" min="0" placeholder="0">
+
+      <!-- BOUTON D'ENREGISTREMENT -->
+      <button class="btn btn-success" id="nextBtn" style="margin-top:14px;">➕ Enregistrer l'élève</button>
+    </div>
+
+    <!-- ACTIONS, IMPRESSION ET APERÇU (EMPLACEMENT INITIAL) -->
+    <div class="card" id="previewCard">
+      <div class="card-title">Aperçu & Actions d'Impression</div>
       
-      <div class="row" style="margin-top:10px;">
-        <button class="btn btn-secondary" id="navPrevBtn">⬅️ Précédent</button>
-        <button class="btn btn-secondary" id="navNextBtn">Suivant ➡️</button>
+      <div class="preview-container">
+        <div class="receipt" id="preview"></div>
       </div>
 
-      <!-- BOUTONS APERÇU ET ENREGISTRER CÔTE À CÔTE -->
-      <div class="row" style="margin-top:8px;">
-        <button class="btn btn-primary" onclick="scrollToPreview()">👁️ Aperçu du reçu</button>
-        <button class="btn btn-success" id="nextBtn" style="margin-top:0;">➕ Enregistrer l'élève</button>
-      </div>
-    </div>
-
-    <div class="card" id="card-preview">
-      <div class="card-title">Aperçu Ticket</div>
-      <div class="receipt" id="preview"></div>
-    </div>
-
-    <!-- ACTIONS -->
-    <div class="card">
       <button class="btn btn-primary" id="printBtn">🖨️ Partager vers App Thermique</button>
       <button class="btn btn-secondary" onclick="printRawBTDirect()">⚡ Impression Directe RawBT</button>
       <button class="btn btn-warning" id="downloadBtn">📥 Télécharger l'image (PNG)</button>
@@ -239,10 +321,10 @@
         </div>
       </div>
 
-      <button class="btn btn-danger" onclick="exportClassePDF()" style="margin-top:10px;">📄 Télécharger le rapport PDF</button>
-      <button class="btn btn-secondary" onclick="exportClasseCSV()" style="margin-top:5px;">📊 Exporter en Excel (CSV)</button>
+      <button class="btn btn-danger" onclick="exportClassePDF()" style="margin-top:12px;">📄 Télécharger le rapport PDF</button>
+      <button class="btn btn-secondary" onclick="exportClasseCSV()" style="margin-top:6px;">📊 Exporter en Excel (CSV)</button>
 
-      <div style="overflow-x:auto; margin-top:10px;">
+      <div style="overflow-x:auto; margin-top:12px;">
         <table class="db-table">
           <thead>
             <tr>
@@ -267,8 +349,8 @@
       <div class="card-title">📊 Bilan Financier Global</div>
       <p><b>Reçus enregistrés :</b> <span id="statCount">0</span></p>
       <p><b>Total Attendu (Engagé) :</b> <span id="statTotalAttendu">0</span> FCFA</p>
-      <p style="color:green;"><b>Total Encaissé (Payé) :</b> <span id="statTotalPaye">0</span> FCFA</p>
-      <p style="color:red;"><b>Total Impayés (Reste) :</b> <span id="statTotalReste">0</span> FCFA</p>
+      <p style="color:var(--success);"><b>Total Encaissé (Payé) :</b> <span id="statTotalPaye">0</span> FCFA</p>
+      <p style="color:var(--danger);"><b>Total Impayés (Reste) :</b> <span id="statTotalReste">0</span> FCFA</p>
     </div>
 
     <div class="card">
@@ -289,10 +371,10 @@
     </div>
   </div>
 
-  <!-- REGLAGES PARAMETRES -->
+  <!-- REGLAGES & SÉCURITÉ -->
   <div id="sec-param" style="display:none;">
     <div class="card">
-      <div class="card-title">Paramètres Général & École</div>
+      <div class="card-title">Paramètres École & Impression</div>
       
       <label>Nom de l'école</label>
       <input id="ecole" type="text" value="EPP 1 DE BANDOLÉ" oninput="render()">
@@ -304,13 +386,35 @@
         <option value="400px">80 mm (Large)</option>
       </select>
 
-      <label>Logo (Galerie)</label>
+      <label>Logo Personnalisé (Image Galerie)</label>
       <input type="file" id="logoUpload" accept="image/*">
+      <button class="btn btn-secondary btn-sm" onclick="resetLogo()" style="margin-top:6px;">Restaurer le Logo COGES par défaut</button>
+    </div>
+
+    <!-- SÉCURITÉ ACCÈS LOGIN & MOT DE PASSE -->
+    <div class="card">
+      <div class="card-title">🔒 Sécurité & Accès Utilisateur</div>
+      
+      <label>Activer la protection par Login / Mot de passe</label>
+      <select id="securityToggle" onchange="toggleSecurityMode()">
+        <option value="off">Désactivé</option>
+        <option value="on">Activé</option>
+      </select>
+
+      <div id="authConfigBox" style="display:none; margin-top:10px;">
+        <label>Changer le Nom d'utilisateur</label>
+        <input type="text" id="newLoginInput" placeholder="Nouveau login (Ex: admin)">
+
+        <label style="margin-top:6px;">Changer le Mot de passe</label>
+        <input type="password" id="newPassInput" placeholder="Nouveau mot de passe">
+
+        <button class="btn btn-primary btn-sm" onclick="changeAuthCredentials()" style="margin-top:10px;">Enregistrer les identifiants</button>
+      </div>
     </div>
 
     <div class="card">
       <div class="card-title">👨‍🏫 Enseignants & Contacts par Classe</div>
-      <p style="font-size:0.78rem; color:#6c757d; margin-top:0;">Définissez le nom du maître et le contact pour chaque classe :</p>
+      <p style="font-size:0.78rem; color:#6b7280; margin-top:0;">Définissez le nom du maître et le contact pour chaque classe :</p>
       
       <div id="classesConfigContainer"></div>
       
@@ -321,22 +425,80 @@
 </main>
 
 <script>
-// SCROLL ET FOCUS SUR L'APERÇU
-function scrollToPreview() {
-  render(); // S'assure que l'aperçu est à jour
-  const previewCard = document.getElementById('card-preview');
-  const previewBox = document.getElementById('preview');
+// LOGO DEFAULT SVG
+const DEFAULT_LOGO_SVG = `<svg class="receipt-logo-svg" viewBox="0 0 24 24" fill="#0d6efd" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`;
+
+// GESTION DU DÉVERROUILLAGE & SÉCURITÉ AUTHENTIFICATION
+let appSecurity = JSON.parse(localStorage.getItem('coges_security') || '{"enabled": true, "user": "admin", "pass": "1234"}');
+
+function checkSecurityOnStart() {
+  const lockScreen = document.getElementById('lockScreen');
+  const lockBtn = document.getElementById('lockAppBtn');
+  const securitySelect = document.getElementById('securityToggle');
   
-  previewCard.scrollIntoView({ behavior: 'smooth' });
-  
-  // Effet d'animation visuel
-  previewBox.classList.add('highlight');
-  setTimeout(() => {
-    previewBox.classList.remove('highlight');
-  }, 1200);
+  securitySelect.value = appSecurity.enabled ? 'on' : 'off';
+  document.getElementById('authConfigBox').style.display = appSecurity.enabled ? 'block' : 'none';
+
+  if (appSecurity.enabled) {
+    lockScreen.style.display = 'flex';
+    lockBtn.style.display = 'block';
+  } else {
+    lockScreen.style.display = 'none';
+    lockBtn.style.display = 'none';
+  }
 }
 
-// CONFIGURATION DES CLASSES (ENSEIGNANT & CONTACT)
+function unlockApp() {
+  const userVal = document.getElementById('loginUsername').value.trim();
+  const passVal = document.getElementById('loginPassword').value.trim();
+  const errorMsg = document.getElementById('authError');
+  
+  if (userVal === appSecurity.user && passVal === appSecurity.pass) {
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    errorMsg.style.display = 'none';
+  } else {
+    errorMsg.style.display = 'block';
+  }
+}
+
+function lockAppManually() {
+  if (appSecurity.enabled) {
+    document.getElementById('lockScreen').style.display = 'flex';
+  }
+}
+
+function toggleSecurityMode() {
+  const isEnabled = document.getElementById('securityToggle').value === 'on';
+  appSecurity.enabled = isEnabled;
+  localStorage.setItem('coges_security', JSON.stringify(appSecurity));
+  document.getElementById('authConfigBox').style.display = isEnabled ? 'block' : 'none';
+  document.getElementById('lockAppBtn').style.display = isEnabled ? 'block' : 'none';
+}
+
+function changeAuthCredentials() {
+  const newLogin = document.getElementById('newLoginInput').value.trim();
+  const newPass = document.getElementById('newPassInput').value.trim();
+  
+  if (!newLogin || !newPass) {
+    return alert("Veuillez saisir à la fois le nom d'utilisateur et le mot de passe.");
+  }
+  
+  appSecurity.user = newLogin;
+  appSecurity.pass = newPass;
+  localStorage.setItem('coges_security', JSON.stringify(appSecurity));
+  
+  document.getElementById('newLoginInput').value = '';
+  document.getElementById('newPassInput').value = '';
+  alert("✅ Identifiants mis à jour avec succès !");
+}
+
+function scrollToPreview() {
+  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// CONFIGURATION DES CLASSES
 const defaultTeachers = {
   CP1: { maitre: "M. KOUASSI", contact: "0101010101" },
   CP2: { maitre: "M. KOFFI", contact: "0202020202" },
@@ -385,10 +547,10 @@ function onClasseChange() {
   render();
 }
 
-// SERVICE WORKER POUR PWA OFFLINE
+// SERVICE WORKER PWA
 if ('serviceWorker' in navigator) {
   const swCode = `
-    self.addEventListener('install', e => e.waitUntil(caches.open('coges-v1').then(c => c.addAll(['./']))));
+    self.addEventListener('install', e => e.waitUntil(caches.open('coges-v3').then(c => c.addAll(['./']))));
     self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
   `;
   const blob = new Blob([swCode], {type: 'application/javascript'});
@@ -444,22 +606,6 @@ function updateStudentDatalist() {
 function updatePaperSize() {
   const size = $('paperSize').value;
   document.documentElement.style.setProperty('--receipt-width', size);
-}
-
-function triggerAutoBackup() {
-  const backupData = {
-    thermer_db: localStorage.getItem('thermer_db'),
-    thermer_teachers: localStorage.getItem('thermer_teachers'),
-    thermer_logo: localStorage.getItem('thermer_logo'),
-    exportDate: new Date().toISOString()
-  };
-  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
-  const downloadAnchor = document.createElement('a');
-  downloadAnchor.setAttribute("href", dataStr);
-  downloadAnchor.setAttribute("download", `Sauvegarde_COGES_${new Date().toISOString().slice(0,10)}.json`);
-  document.body.appendChild(downloadAnchor);
-  downloadAnchor.click();
-  downloadAnchor.remove();
 }
 
 function renderDatabaseTable() {
@@ -564,40 +710,6 @@ function saveToDatabase() {
   return true;
 }
 
-function loadReceiptAtIndex(index) {
-  if (index >= 0 && index < dbReceipts.length) {
-    currentIndex = index;
-    const r = dbReceipts[currentIndex];
-    $('recuNum').value = r.recuNum || generateNextReceiptNum();
-    $('nom').value = r.nom || '';
-    $('classe').value = r.classe || 'CP1';
-    onClasseChange();
-    $('date').value = r.date || new Date().toISOString().slice(0,10);
-    $('total').value = r.total || '';
-    $('paye').value = r.paye || 0;
-    $('reste').value = r.reste || 0;
-    resteModifieManuellement = true;
-    render();
-  }
-}
-
-$('navPrevBtn').addEventListener('click', () => {
-  if (dbReceipts.length === 0) return alert("L'historique est vide.");
-  if (currentIndex === -1) currentIndex = dbReceipts.length - 1;
-  else if (currentIndex > 0) currentIndex--;
-  else return alert("Premier reçu atteint.");
-  loadReceiptAtIndex(currentIndex);
-});
-
-$('navNextBtn').addEventListener('click', () => {
-  if (currentIndex !== -1 && currentIndex < dbReceipts.length - 1) {
-    currentIndex++;
-    loadReceiptAtIndex(currentIndex);
-  } else {
-    resetForm();
-  }
-});
-
 function resetForm() {
   currentIndex = -1;
   editRecordId = null;
@@ -673,12 +785,16 @@ function render() {
   const resteVal = Number($('reste').value || 0);
   const reste = formatFCFA(resteVal);
 
+  const logoMarkup = logoDataUrl 
+    ? `<img src="${logoDataUrl}" class="receipt-logo-img">`
+    : DEFAULT_LOGO_SVG;
+
   const statusBadge = resteVal === 0 
-    ? `<div class="badge-status status-solder">[ SOLDER ]</div>`
+    ? `<div class="badge-status status-solder">[ SOLDÉ ]</div>`
     : `<div class="badge-status status-avance">[ AVANCE ]</div>`;
   
   $('preview').innerHTML = `
-    ${logoDataUrl ? `<img src="${logoDataUrl}" class="receipt-logo">` : ''}
+    ${logoMarkup}
     <div class="receipt-center receipt-bold">${ecole}</div>
     <div class="receipt-center">REÇU COGES</div>
     <div class="receipt-center"><small>${recuNum}</small></div>
@@ -696,6 +812,13 @@ function render() {
   `;
 }
 
+function resetLogo() {
+  logoDataUrl = '';
+  localStorage.removeItem('thermer_logo');
+  render();
+  alert("Logo par défaut restauré.");
+}
+
 function printRawBTDirect() {
   const txt = `${$('ecole').value}
 RECU COGES - ${$('recuNum').value}
@@ -706,14 +829,13 @@ Date   : ${$('date').value || '—'}
 --------------------------------
 PAYE   : ${Number($('paye').value || 0)} FCFA
 RESTE  : ${Number($('reste').value || 0)} FCFA
-Statut : ${Number($('reste').value || 0) === 0 ? 'SOLDER' : 'AVANCE'}
+Statut : ${Number($('reste').value || 0) === 0 ? 'SOLDE' : 'AVANCE'}
 --------------------------------
 Contact: ${$('contact').value}
 Maitre : ${$('maitre').value.toUpperCase()}
 
 
 `;
-
   const intentUrl = "intent:#Intent;scheme=rawbt;package=ru.is210.rawbt;action=android.intent.action.VIEW;S.txt=" + encodeURIComponent(txt) + ";end;";
   window.location.href = intentUrl;
 }
@@ -751,7 +873,7 @@ function exportClassePDF() {
 
   doc.autoTable({
     head: [tableColumn], body: tableRows, startY: 33, theme: 'grid',
-    headStyles: { fillColor: [0, 123, 255] }
+    headStyles: { fillColor: [13, 110, 253] }
   });
 
   doc.save(`Rapport_COGES_${selectedClasse}_${new Date().toISOString().slice(0,10)}.pdf`);
@@ -853,7 +975,7 @@ $('printBtn').addEventListener('click', async () => {
           await navigator.share({
             files: [file],
             title: 'Imprimer Reçu COGES',
-            text: 'Choisissez votre application d’impression (RawBT, Printer App...)'
+            text: 'Choisissez votre application d’impression (RawBT...)'
           });
           statusEl.textContent = "✅ Transmis à l'application d'impression !";
           statusEl.style.color = "green";
@@ -892,8 +1014,8 @@ function updateStatsUI() {
     tbody.innerHTML += `
       <tr>
         <td><b>${c}</b></td>
-        <td style="color:green;">${formatFCFA(p)} FCFA</td>
-        <td style="color:red;">${formatFCFA(r)} FCFA</td>
+        <td style="color:var(--success);">${formatFCFA(p)} FCFA</td>
+        <td style="color:var(--danger);">${formatFCFA(r)} FCFA</td>
       </tr>
     `;
   });
@@ -906,7 +1028,20 @@ function resetStats() {
 }
 
 function exportBackupManuelle() {
-  triggerAutoBackup();
+  const backupData = {
+    thermer_db: localStorage.getItem('thermer_db'),
+    thermer_teachers: localStorage.getItem('thermer_teachers'),
+    thermer_logo: localStorage.getItem('thermer_logo'),
+    coges_security: localStorage.getItem('coges_security'),
+    exportDate: new Date().toISOString()
+  };
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `Sauvegarde_COGES_${new Date().toISOString().slice(0,10)}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
 }
 
 function importBackup() {
@@ -920,6 +1055,7 @@ function importBackup() {
         if (content.thermer_db) localStorage.setItem('thermer_db', content.thermer_db);
         if (content.thermer_teachers) localStorage.setItem('thermer_teachers', content.thermer_teachers);
         if (content.thermer_logo) localStorage.setItem('thermer_logo', content.thermer_logo);
+        if (content.coges_security) localStorage.setItem('coges_security', content.coges_security);
         alert("Sauvegarde restaurée avec succès !"); 
         location.reload();
       } catch (err) {
@@ -930,6 +1066,7 @@ function importBackup() {
 }
 
 window.addEventListener('load', () => {
+  checkSecurityOnStart();
   $('recuNum').value = generateNextReceiptNum();
   updateStudentDatalist();
   onClasseChange();
