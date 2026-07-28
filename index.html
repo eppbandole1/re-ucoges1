@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
 <title>Reçu de payement COGES Pro</title>
 
 <!-- PWA Meta -->
@@ -77,8 +77,22 @@
   }
   .drawer-menu li:hover { background: #eef2ff; color: var(--primary); }
 
-  /* CONTENEUR PRINCIPAL & CARTES */
-  main { max-width: 520px; margin: 16px auto; padding: 0 12px; }
+  /* CONTENEUR PRINCIPAL & RESPONSIVE GRID (PC & MOBILE) */
+  main { max-width: 800px; margin: 16px auto; padding: 0 12px; }
+  
+  .layout-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  @media (min-width: 768px) {
+    .layout-grid {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
   .card {
     background: var(--card); border-radius: var(--radius); padding: 16px;
     margin-bottom: 14px; box-shadow: var(--shadow); border: 1px solid rgba(0,0,0,0.03);
@@ -151,7 +165,7 @@
   .db-table th, .db-table td { border: 1px solid #e5e7eb; padding: 7px 6px; text-align: left; }
   .db-table th { background: #f9fafb; font-weight: 700; color: #4b5563; }
   .actions-cell { display: flex; gap: 4px; }
-  .class-config-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+  .config-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
 
   /* ECRAN DE CONNEXION LOGIN / MOT DE PASSE */
   .lock-screen {
@@ -169,6 +183,20 @@
   .login-input-group input { background: #0d1b2a; color: white; border: 1px solid #2d3748; }
   .login-input-group input:focus { border-color: #0d6efd; }
   .auth-error { color: #ff6b6b; font-size: 0.8rem; margin-top: 8px; display: none; text-align: center; }
+
+  /* RÈGLES SPÉCIFIQUES POUR L'IMPRESSION SUR NAVIGATEUR (PC ET MOBILE) */
+  @media print {
+    body * { visibility: hidden; }
+    #preview, #preview * { visibility: visible; }
+    #preview {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      border: none;
+      box-shadow: none;
+    }
+  }
 </style>
 </head>
 <body>
@@ -222,7 +250,7 @@
     <li onclick="showSection('creer')">📝 Créer un reçu</li>
     <li onclick="showSection('bdd')">🗃️ Base de Données (Historique)</li>
     <li onclick="showSection('stats')">📊 Bilan Financier & Stats</li>
-    <li onclick="showSection('param')">⚙️ Paramètres & Enseignants</li>
+    <li onclick="showSection('param')">⚙️ Paramètres & Président COGES</li>
     <li onclick="exportBackupManuelle()">📤 Exporter la sauvegarde (JSON)</li>
     <li onclick="importBackup()">📥 Importer la sauvegarde</li>
   </ul>
@@ -232,69 +260,75 @@
 
   <!-- SAISIE / CRÉATION DE REÇU -->
   <div id="sec-creer">
-    <div class="card">
-      <div class="card-title">
-        <span>Informations Reçu</span>
-        <!-- BOUTONS CÔTE À CÔTE -->
-        <div class="header-btn-group">
-          <button class="btn btn-secondary btn-sm" onclick="scrollToPreview()">👁️ Aperçu</button>
-          <button class="btn btn-new-receipt btn-sm" onclick="resetForm()">✨ Nouveau reçu</button>
-        </div>
-      </div>
-
-      <div class="row">
-        <div><label>N° Reçu</label><input id="recuNum" type="text" readonly style="background:#e9ecef;"></div>
-        <div><label>Date *</label><input id="date" type="date"></div>
-      </div>
-
-      <label>Nom de l'Élève *</label>
-      <input id="nom" type="text" list="studentsList" placeholder="Ex: KORE JEAN" autocomplete="off">
-      <datalist id="studentsList"></datalist>
-
-      <div class="row">
-        <div>
-          <label>Classe</label>
-          <select id="classe" onchange="onClasseChange()">
-            <option value="CP1">CP1</option>
-            <option value="CP2">CP2</option>
-            <option value="CE1">CE1</option>
-            <option value="CE2">CE2</option>
-            <option value="CM1">CM1</option>
-            <option value="CM2">CM2</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row">
-        <div><label>Enseignant (Auto)</label><input id="maitre" type="text" readonly style="background:#e9ecef;"></div>
-        <div><label>Contact (Auto)</label><input id="contact" type="text" readonly style="background:#e9ecef;"></div>
-      </div>
-
-      <div class="row">
-        <div><label>Montant Dû *</label><input id="total" type="number" min="0" placeholder="Total"></div>
-        <div><label>Montant Payé *</label><input id="paye" type="number" min="0" placeholder="Payé"></div>
-      </div>
+    <div class="layout-grid">
       
-      <label>Reste à Payer (Modifiable)</label>
-      <input id="reste" type="number" min="0" placeholder="0">
+      <!-- COLONNE SAISIE -->
+      <div class="card">
+        <div class="card-title">
+          <span>Informations Reçu</span>
+          <div class="header-btn-group">
+            <button class="btn btn-secondary btn-sm" onclick="scrollToPreview()">👁️ Aperçu</button>
+            <button class="btn btn-new-receipt btn-sm" onclick="resetForm()">✨ Nouveau reçu</button>
+          </div>
+        </div>
 
-      <!-- BOUTON D'ENREGISTREMENT -->
-      <button class="btn btn-success" id="nextBtn" style="margin-top:14px;">➕ Enregistrer l'élève</button>
-    </div>
+        <div class="row">
+          <div><label>N° Reçu</label><input id="recuNum" type="text" readonly style="background:#e9ecef;"></div>
+          <div><label>Date *</label><input id="date" type="date"></div>
+        </div>
 
-    <!-- ACTIONS, IMPRESSION ET APERÇU (EMPLACEMENT INITIAL) -->
-    <div class="card" id="previewCard">
-      <div class="card-title">Aperçu & Actions d'Impression</div>
-      
-      <div class="preview-container">
-        <div class="receipt" id="preview"></div>
+        <label>Nom de l'Élève *</label>
+        <input id="nom" type="text" list="studentsList" placeholder="Ex: KORE JEAN" autocomplete="off">
+        <datalist id="studentsList"></datalist>
+
+        <div class="row">
+          <div>
+            <label>Classe</label>
+            <select id="classe" onchange="render()">
+              <option value="CP1">CP1</option>
+              <option value="CP2">CP2</option>
+              <option value="CE1">CE1</option>
+              <option value="CE2">CE2</option>
+              <option value="CM1">CM1</option>
+              <option value="CM2">CM2</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div><label>Président COGES (Auto)</label><input id="presidentCoges" type="text" readonly style="background:#e9ecef;"></div>
+          <div><label>Contact (Auto)</label><input id="contactCoges" type="text" readonly style="background:#e9ecef;"></div>
+        </div>
+
+        <div class="row">
+          <div><label>Montant Dû *</label><input id="total" type="number" min="0" placeholder="Total"></div>
+          <div><label>Montant Payé *</label><input id="paye" type="number" min="0" placeholder="Payé"></div>
+        </div>
+        
+        <label>Reste à Payer (Modifiable)</label>
+        <input id="reste" type="number" min="0" placeholder="0">
+
+        <!-- BOUTON D'ENREGISTREMENT -->
+        <button class="btn btn-success" id="nextBtn" style="margin-top:14px;">➕ Enregistrer l'élève</button>
       </div>
 
-      <button class="btn btn-primary" id="printBtn">🖨️ Partager vers App Thermique</button>
-      <button class="btn btn-secondary" onclick="printRawBTDirect()">⚡ Impression Directe RawBT</button>
-      <button class="btn btn-warning" id="downloadBtn">📥 Télécharger l'image (PNG)</button>
-      <button class="btn btn-success" id="shareBtn" style="background:#25D366;">📲 Partager sur WhatsApp</button>
-      <div id="status"></div>
+      <!-- COLONNE APERÇU ET IMPRESSION -->
+      <div class="card" id="previewCard">
+        <div class="card-title">Aperçu & Actions d'Impression</div>
+        
+        <div class="preview-container">
+          <div class="receipt" id="preview"></div>
+        </div>
+
+        <!-- IMPRESSION STANDARD PC ET MOBILE -->
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimer / PDF (Standard PC/Mobile)</button>
+        <button class="btn btn-secondary" id="printBtn">📱 Partager vers App Thermique</button>
+        <button class="btn btn-secondary" onclick="printRawBTDirect()">⚡ Impression Directe RawBT (Android)</button>
+        <button class="btn btn-warning" id="downloadBtn">📥 Télécharger l'image (PNG)</button>
+        <button class="btn btn-success" id="shareBtn" style="background:#25D366;">📲 Partager sur WhatsApp</button>
+        <div id="status"></div>
+      </div>
+
     </div>
   </div>
 
@@ -383,7 +417,7 @@
       <select id="paperSize" onchange="updatePaperSize()">
         <option value="280px">57 mm (Thermique Réduite)</option>
         <option value="300px">58 mm (Standard Thermique)</option>
-        <option value="400px">80 mm (Large)</option>
+        <option value="400px">80 mm (Large / PC)</option>
       </select>
 
       <label>Logo Personnalisé (Image Galerie)</label>
@@ -391,11 +425,27 @@
       <button class="btn btn-secondary btn-sm" onclick="resetLogo()" style="margin-top:6px;">Restaurer le Logo COGES par défaut</button>
     </div>
 
-    <!-- SÉCURITÉ ACCÈS LOGIN & MOT DE PASSE -->
+    <!-- RESPONSABLE COGES -->
     <div class="card">
-      <div class="card-title">🔒 Sécurité & Accès Utilisateur</div>
+      <div class="card-title">👤 Président du COGES</div>
+      <p style="font-size:0.78rem; color:#6b7280; margin-top:0;">Informations affichées sur tous les reçus de paiement :</p>
       
-      <label>Activer la protection par Login / Mot de passe</label>
+      <div class="config-box">
+        <label>Nom & Prénoms du Président COGES</label>
+        <input type="text" id="cfg_president_nom" placeholder="Ex: M. KOUASSI JEAN">
+        
+        <label style="margin-top:8px;">Contact Téléphone</label>
+        <input type="text" id="cfg_president_contact" placeholder="Ex: 0102030405">
+      </div>
+      
+      <button class="btn btn-success" onclick="savePresidentConfig()">💾 Sauvegarder les infos COGES</button>
+    </div>
+
+    <!-- SÉCURITÉ ACCÈS LOGIN & CODE PIN DE SUPPRESSION -->
+    <div class="card">
+      <div class="card-title">🔒 Sécurité & Autorisation de Suppression</div>
+      
+      <label>Activer la protection au démarrage (Login / Passe)</label>
       <select id="securityToggle" onchange="toggleSecurityMode()">
         <option value="off">Désactivé</option>
         <option value="on">Activé</option>
@@ -405,20 +455,17 @@
         <label>Changer le Nom d'utilisateur</label>
         <input type="text" id="newLoginInput" placeholder="Nouveau login (Ex: admin)">
 
-        <label style="margin-top:6px;">Changer le Mot de passe</label>
+        <label style="margin-top:6px;">Changer le Mot de passe de connexion</label>
         <input type="password" id="newPassInput" placeholder="Nouveau mot de passe">
 
         <button class="btn btn-primary btn-sm" onclick="changeAuthCredentials()" style="margin-top:10px;">Enregistrer les identifiants</button>
       </div>
-    </div>
 
-    <div class="card">
-      <div class="card-title">👨‍🏫 Enseignants & Contacts par Classe</div>
-      <p style="font-size:0.78rem; color:#6b7280; margin-top:0;">Définissez le nom du maître et le contact pour chaque classe :</p>
-      
-      <div id="classesConfigContainer"></div>
-      
-      <button class="btn btn-success" onclick="saveClassesConfig()">💾 Sauvegarder les enseignants</button>
+      <hr style="border:0; border-top:1px solid #e5e7eb; margin:15px 0;">
+
+      <label>🔐 Code PIN d'Autorisation pour la Suppression (3 chiffres)</label>
+      <input type="password" id="deletePinInput" maxlength="3" placeholder="Code à 3 chiffres (Ex: 123)">
+      <button class="btn btn-warning btn-sm" onclick="changeDeletePin()" style="margin-top:8px;">Changer le Code PIN de suppression</button>
     </div>
   </div>
 
@@ -428,8 +475,8 @@
 // LOGO DEFAULT SVG
 const DEFAULT_LOGO_SVG = `<svg class="receipt-logo-svg" viewBox="0 0 24 24" fill="#0d6efd" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`;
 
-// GESTION DU DÉVERROUILLAGE & SÉCURITÉ AUTHENTIFICATION
-let appSecurity = JSON.parse(localStorage.getItem('coges_security') || '{"enabled": true, "user": "admin", "pass": "1234"}');
+// GESTION DU DÉVERROUILLAGE & SÉCURITÉ AUTHENTIFICATION ET CODE PIN
+let appSecurity = JSON.parse(localStorage.getItem('coges_security') || '{"enabled": true, "user": "admin", "pass": "1234", "deletePin": "123"}');
 
 function checkSecurityOnStart() {
   const lockScreen = document.getElementById('lockScreen');
@@ -438,6 +485,9 @@ function checkSecurityOnStart() {
   
   securitySelect.value = appSecurity.enabled ? 'on' : 'off';
   document.getElementById('authConfigBox').style.display = appSecurity.enabled ? 'block' : 'none';
+  if(document.getElementById('deletePinInput')) {
+    document.getElementById('deletePinInput').value = appSecurity.deletePin || '123';
+  }
 
   if (appSecurity.enabled) {
     lockScreen.style.display = 'flex';
@@ -494,57 +544,57 @@ function changeAuthCredentials() {
   alert("✅ Identifiants mis à jour avec succès !");
 }
 
+function changeDeletePin() {
+  const pinVal = document.getElementById('deletePinInput').value.trim();
+  if (!/^\d{3}$/.test(pinVal)) {
+    return alert("⚠️ Le code PIN de suppression doit être exactement composé de 3 chiffres.");
+  }
+  appSecurity.deletePin = pinVal;
+  localStorage.setItem('coges_security', JSON.stringify(appSecurity));
+  alert("✅ Code PIN de suppression mis à jour avec succès !");
+}
+
+function verifyDeleteAuthorization() {
+  const pinCode = appSecurity.deletePin || '123';
+  const inputPin = prompt("🔐 AUTORISATION REQUISE :\nVeuillez entrer le code PIN à 3 chiffres pour autoriser la suppression :");
+  if (inputPin === null) return false;
+  if (inputPin.trim() === pinCode) {
+    return true;
+  } else {
+    alert("❌ Code PIN incorrect ! Action de suppression refusée.");
+    return false;
+  }
+}
+
 function scrollToPreview() {
   document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// CONFIGURATION DES CLASSES
-const defaultTeachers = {
-  CP1: { maitre: "M. KOUASSI", contact: "0101010101" },
-  CP2: { maitre: "M. KOFFI", contact: "0202020202" },
-  CE1: { maitre: "MME YAO", contact: "0303030303" },
-  CE2: { maitre: "M. KONAN", contact: "0404040404" },
-  CM1: { maitre: "M. DIABATE", contact: "0505050505" },
-  CM2: { maitre: "M. ZOKOU", contact: "0103166270" }
-};
+// CONFIGURATION PRÉSIDENT DU COGES
+let presidentConfig = JSON.parse(localStorage.getItem('thermer_president') || '{"nom": "M. KOUASSI JEAN", "contact": "0102030405"}');
 
-let teachersConfig = JSON.parse(localStorage.getItem('thermer_teachers') || JSON.stringify(defaultTeachers));
-
-function renderClassesConfigUI() {
-  const container = $('classesConfigContainer');
-  container.innerHTML = '';
-  ['CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'].forEach(c => {
-    const teacher = teachersConfig[c] || { maitre: '', contact: '' };
-    container.innerHTML += `
-      <div class="class-config-box">
-        <strong style="color:var(--primary);">${c}</strong>
-        <div class="row">
-          <div><label>Enseignant</label><input type="text" id="cfg_maitre_${c}" value="${teacher.maitre}"></div>
-          <div><label>Contact</label><input type="text" id="cfg_contact_${c}" value="${teacher.contact}"></div>
-        </div>
-      </div>
-    `;
-  });
+function loadPresidentConfigUI() {
+  $('cfg_president_nom').value = presidentConfig.nom || '';
+  $('cfg_president_contact').value = presidentConfig.contact || '';
+  updatePresidentInputs();
 }
 
-function saveClassesConfig() {
-  ['CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'].forEach(c => {
-    teachersConfig[c] = {
-      maitre: $(`cfg_maitre_${c}`).value.trim().toUpperCase(),
-      contact: $(`cfg_contact_${c}`).value.trim()
-    };
-  });
-  localStorage.setItem('thermer_teachers', JSON.stringify(teachersConfig));
-  alert("✅ Configuration des enseignants enregistrée !");
-  onClasseChange();
-}
-
-function onClasseChange() {
-  const selectedClasse = $('classe').value;
-  const teacher = teachersConfig[selectedClasse] || { maitre: '—', contact: '—' };
-  $('maitre').value = teacher.maitre;
-  $('contact').value = teacher.contact;
+function savePresidentConfig() {
+  const nom = $('cfg_president_nom').value.trim().toUpperCase();
+  const contact = $('cfg_president_contact').value.trim();
+  
+  if (!nom) return alert("Veuillez saisir le nom du Président COGES.");
+  
+  presidentConfig = { nom, contact };
+  localStorage.setItem('thermer_president', JSON.stringify(presidentConfig));
+  updatePresidentInputs();
   render();
+  alert("✅ Informations du Président COGES enregistrées !");
+}
+
+function updatePresidentInputs() {
+  $('presidentCoges').value = presidentConfig.nom || '—';
+  $('contactCoges').value = presidentConfig.contact || '—';
 }
 
 // SERVICE WORKER PWA
@@ -575,7 +625,7 @@ function showSection(sec) {
   toggleDrawer();
   if(sec === 'stats') updateStatsUI();
   if(sec === 'bdd') renderDatabaseTable();
-  if(sec === 'param') renderClassesConfigUI();
+  if(sec === 'param') loadPresidentConfigUI();
 }
 
 const $ = id => document.getElementById(id);
@@ -640,7 +690,7 @@ function renderDatabaseTable() {
 }
 
 function deleteReceipt(id) {
-  if (confirm("Supprimer ce reçu ?")) {
+  if (verifyDeleteAuthorization()) {
     dbReceipts = dbReceipts.filter(r => r.id !== id);
     localStorage.setItem('thermer_db', JSON.stringify(dbReceipts));
     updateStudentDatalist();
@@ -656,7 +706,6 @@ function editReceipt(id) {
   $('recuNum').value = r.recuNum || generateNextReceiptNum();
   $('nom').value = r.nom;
   $('classe').value = r.classe;
-  onClasseChange();
   $('date').value = r.date;
   $('total').value = r.total || '';
   $('paye').value = r.paye;
@@ -684,8 +733,8 @@ function saveToDatabase() {
         total: Number($('total').value || 0),
         paye: payeActuel,
         reste: Number($('reste').value || 0),
-        maitre: $('maitre').value.trim().toUpperCase(),
-        contact: $('contact').value.trim()
+        president: $('presidentCoges').value.trim().toUpperCase(),
+        contact: $('contactCoges').value.trim()
       };
       editRecordId = null;
     }
@@ -699,8 +748,8 @@ function saveToDatabase() {
       total: Number($('total').value || 0),
       paye: payeActuel,
       reste: Number($('reste').value || 0),
-      maitre: $('maitre').value.trim().toUpperCase() || '—',
-      contact: $('contact').value.trim() || '—'
+      president: $('presidentCoges').value.trim().toUpperCase() || '—',
+      contact: $('contactCoges').value.trim() || '—'
     };
     dbReceipts.push(receipt);
   }
@@ -720,7 +769,6 @@ function resetForm() {
   $('reste').value = '';
   $('date').value = new Date().toISOString().slice(0,10);
   resteModifieManuellement = false;
-  onClasseChange();
   render();
 }
 
@@ -775,8 +823,8 @@ function recalculerReste() {
 });
 
 function render() {
-  const maitre = $('maitre').value || '—';
-  const contact = $('contact').value || '—';
+  const president = $('presidentCoges').value || '—';
+  const contact = $('contactCoges').value || '—';
   const nom = $('nom').value.trim().toUpperCase() || '—';
   const classe = $('classe').value.trim().toUpperCase() || '—';
   const ecole = $('ecole').value.trim() || '—';
@@ -807,8 +855,8 @@ function render() {
     <div class="receipt-bold">RESTE  : ${reste} FCFA</div>
     ${statusBadge}
     --------------------------------
+    <div class="receipt-center">Président COGES: ${president}</div>
     <div class="receipt-center">Contact: ${contact}</div>
-    <div class="receipt-center">Maître: ${maitre}</div>
   `;
 }
 
@@ -831,8 +879,8 @@ PAYE   : ${Number($('paye').value || 0)} FCFA
 RESTE  : ${Number($('reste').value || 0)} FCFA
 Statut : ${Number($('reste').value || 0) === 0 ? 'SOLDE' : 'AVANCE'}
 --------------------------------
-Contact: ${$('contact').value}
-Maitre : ${$('maitre').value.toUpperCase()}
+President COGES: ${$('presidentCoges').value.toUpperCase()}
+Contact: ${$('contactCoges').value}
 
 
 `;
@@ -885,9 +933,9 @@ function exportClasseCSV() {
 
   if(filteredData.length === 0) return alert("Aucune donnée à exporter.");
 
-  let csvContent = "data:text/csv;charset=utf-8,RecuNum;Date;Eleve;Classe;Paye;Reste;Maitre;Contact\n";
+  let csvContent = "data:text/csv;charset=utf-8,RecuNum;Date;Eleve;Classe;Paye;Reste;President;Contact\n";
   filteredData.forEach(r => {
-    csvContent += `${r.recuNum || ''};${r.date};${r.nom};${r.classe};${r.paye};${r.reste};${r.maitre};${r.contact}\n`;
+    csvContent += `${r.recuNum || ''};${r.date};${r.nom};${r.classe};${r.paye};${r.reste};${r.president || ''};${r.contact || ''}\n`;
   });
 
   const a = document.createElement('a');
@@ -897,7 +945,7 @@ function exportClasseCSV() {
 }
 
 function clearDatabase() {
-  if (confirm("Voulez-vous vraiment effacer TOUTE la base de données ?")) {
+  if (verifyDeleteAuthorization()) {
     dbReceipts = [];
     localStorage.removeItem('thermer_db');
     updateStudentDatalist();
@@ -951,7 +999,7 @@ $('shareBtn').addEventListener('click', async () => {
           text: `Reçu COGES de ${$('nom').value.trim() || 'Élève'}`
         });
       } else {
-        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent('REÇU COGES\nÉlève: ' + $('nom').value + '\nPayé: ' + $('paye').value + ' FCFA\nMaître: ' + $('maitre').value)}`;
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent('REÇU COGES\nÉlève: ' + $('nom').value + '\nPayé: ' + $('paye').value + ' FCFA\nPrésident COGES: ' + $('presidentCoges').value)}`;
         window.open(url, '_blank');
       }
     });
@@ -1022,7 +1070,7 @@ function updateStatsUI() {
 }
 
 function resetStats() {
-  if (confirm("Réinitialiser les statistiques récapitulatives ?")) {
+  if (verifyDeleteAuthorization()) {
     updateStatsUI();
   }
 }
@@ -1030,7 +1078,7 @@ function resetStats() {
 function exportBackupManuelle() {
   const backupData = {
     thermer_db: localStorage.getItem('thermer_db'),
-    thermer_teachers: localStorage.getItem('thermer_teachers'),
+    thermer_president: localStorage.getItem('thermer_president'),
     thermer_logo: localStorage.getItem('thermer_logo'),
     coges_security: localStorage.getItem('coges_security'),
     exportDate: new Date().toISOString()
@@ -1053,7 +1101,7 @@ function importBackup() {
       try {
         const content = JSON.parse(evt.target.result);
         if (content.thermer_db) localStorage.setItem('thermer_db', content.thermer_db);
-        if (content.thermer_teachers) localStorage.setItem('thermer_teachers', content.thermer_teachers);
+        if (content.thermer_president) localStorage.setItem('thermer_president', content.thermer_president);
         if (content.thermer_logo) localStorage.setItem('thermer_logo', content.thermer_logo);
         if (content.coges_security) localStorage.setItem('coges_security', content.coges_security);
         alert("Sauvegarde restaurée avec succès !"); 
@@ -1067,10 +1115,11 @@ function importBackup() {
 
 window.addEventListener('load', () => {
   checkSecurityOnStart();
+  updatePresidentInputs();
+  loadPresidentConfigUI();
   $('recuNum').value = generateNextReceiptNum();
   updateStudentDatalist();
-  onClasseChange();
-  renderClassesConfigUI();
+  render();
 });
 </script>
 </body>
