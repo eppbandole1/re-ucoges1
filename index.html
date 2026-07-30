@@ -77,8 +77,34 @@
   }
   .drawer-menu li:hover { background: #eef2ff; color: var(--primary); }
 
-  /* CONTENEUR PRINCIPAL & RESPONSIVE GRID (PC & MOBILE) */
-  main { max-width: 800px; margin: 16px auto; padding: 0 12px; }
+  /* NOTIFICATION TOAST */
+  .toast-notification {
+    position: fixed; top: 20px; right: 20px;
+    background: #198754; color: white; padding: 14px 20px;
+    border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    font-weight: 600; font-size: 0.95rem; z-index: 9999;
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(-100px); opacity: 0; transition: all 0.4s ease;
+  }
+  .toast-notification.show { transform: translateY(0); opacity: 1; }
+
+  /* COMPOSANT D'INFORMATION DE RECHERCHE ÉLÈVE */
+  .student-status-box {
+    margin-top: 10px; padding: 10px 12px; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; display: none;
+  }
+  .student-status-box.solde {
+    background: #d1e7dd; color: #0f5132; border: 1px solid #badbcc;
+  }
+  .student-status-box.non-solde {
+    background: #f8d7da; color: #842029; border: 1px solid #f5c2c7;
+  }
+  .student-status-box.nouveau {
+    background: #e2e3e5; color: #41464b; border: 1px solid #d3d6d8;
+  }
+
+  /* CONTENEUR PRINCIPAL & RESPONSIVE GRID */
+  main { max-width: 900px; margin: 16px auto; padding: 0 12px; }
   
   .layout-grid {
     display: grid;
@@ -88,7 +114,7 @@
 
   @media (min-width: 768px) {
     .layout-grid {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.1fr 0.9fr;
       align-items: start;
     }
   }
@@ -152,6 +178,7 @@
   .btn-warning { background: var(--warning); color: #212529; }
   .btn-secondary { background: #e5e7eb; color: #374151; }
   .btn-secondary:hover { background: #d1d5db; }
+  .btn:disabled { background: #9ca3af !important; cursor: not-allowed; opacity: 0.7; transform: none; }
   
   .btn-new-receipt {
     background: linear-gradient(135deg, #0dcaf0, #0d6efd);
@@ -184,24 +211,24 @@
   .login-input-group input:focus { border-color: #0d6efd; }
   .auth-error { color: #ff6b6b; font-size: 0.8rem; margin-top: 8px; display: none; text-align: center; }
 
-  /* RÈGLES SPÉCIFIQUES POUR L'IMPRESSION SUR NAVIGATEUR (PC ET MOBILE) */
+  /* IMPRESSION */
   @media print {
     body * { visibility: hidden; }
     #preview, #preview * { visibility: visible; }
     #preview {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      border: none;
-      box-shadow: none;
+      position: absolute; left: 0; top: 0; width: 100%; border: none; box-shadow: none;
     }
   }
 </style>
 </head>
 <body>
 
-<!-- ECRAN D'AUTHENTIFICATION LOGIN & MOT DE PASSE -->
+<!-- TOAST CONFIRMATION -->
+<div class="toast-notification" id="toastNotification">
+  <span id="toastMessage">✓ Élève enregistré avec succès !</span>
+</div>
+
+<!-- ECRAN D'AUTHENTIFICATION -->
 <div class="lock-screen" id="lockScreen" style="display: none;">
   <div class="lock-card">
     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
@@ -250,7 +277,7 @@
     <li onclick="showSection('creer')">📝 Créer un reçu</li>
     <li onclick="showSection('bdd')">🗃️ Base de Données (Historique)</li>
     <li onclick="showSection('stats')">📊 Bilan Financier & Stats</li>
-    <li onclick="showSection('param')">⚙️ Paramètres & Président COGES</li>
+    <li onclick="showSection('param')">⚙️ Paramètres & Réglages</li>
     <li onclick="exportBackupManuelle()">📤 Exporter la sauvegarde (JSON)</li>
     <li onclick="importBackup()">📥 Importer la sauvegarde</li>
   </ul>
@@ -273,18 +300,30 @@
         </div>
 
         <div class="row">
-          <div><label>N° Reçu</label><input id="recuNum" type="text" readonly style="background:#e9ecef;"></div>
+          <div><label>N° Reçu</label><input id="recuNum" type="text" readonly style="background:#e9ecef; font-weight:bold;"></div>
           <div><label>Date *</label><input id="date" type="date"></div>
         </div>
 
+        <!-- SAISIE NOM DE L'ÉLÈVE -->
         <label>Nom de l'Élève *</label>
-        <input id="nom" type="text" list="studentsList" placeholder="Ex: KORE JEAN" autocomplete="off">
-        <datalist id="studentsList"></datalist>
+        <input id="nom" type="text" placeholder="Ex: OLLO DAVID" autocomplete="off" oninput="lookupStudentStatus()">
 
         <div class="row">
+          <!-- CHAMP 1: SÉLECTION ÉCOLE -->
           <div>
-            <label>Classe</label>
-            <select id="classe" onchange="render()">
+            <label>École *</label>
+            <select id="ecole" onchange="lookupStudentStatus(); render();">
+              <option value="">Sélection école</option>
+              <option value="ÉCOLE A">ÉCOLE A</option>
+              <option value="ÉCOLE B">ÉCOLE B</option>
+            </select>
+          </div>
+
+          <!-- CHAMP 2: SÉLECTION CLASSE -->
+          <div>
+            <label>Classe *</label>
+            <select id="classe" onchange="lookupStudentStatus(); render();">
+              <option value="">Sélection classe</option>
               <option value="CP1">CP1</option>
               <option value="CP2">CP2</option>
               <option value="CE1">CE1</option>
@@ -295,21 +334,21 @@
           </div>
         </div>
 
+        <!-- ENCADRÉ DE STATUT AUTOMATIQUE -->
+        <div id="studentStatusBox" class="student-status-box"></div>
+
         <div class="row">
-          <div><label>Président COGES (Auto)</label><input id="presidentCoges" type="text" readonly style="background:#e9ecef;"></div>
-          <div><label>Contact (Auto)</label><input id="contactCoges" type="text" readonly style="background:#e9ecef;"></div>
+          <div><label>Montant Dû (Fixe) *</label><input id="total" type="number" min="0" placeholder="Total"></div>
+          <div><label>Montant Versé ce Jour *</label><input id="paye" type="number" min="0" placeholder="Montant apporté"></div>
         </div>
 
         <div class="row">
-          <div><label>Montant Dû *</label><input id="total" type="number" min="0" placeholder="Total"></div>
-          <div><label>Montant Payé *</label><input id="paye" type="number" min="0" placeholder="Payé"></div>
+          <div><label>Total Cumulé Payé (Gestion)</label><input id="totalCumule" type="number" readonly style="background:#e9ecef;"></div>
+          <div><label>Reste à Payer</label><input id="reste" type="number" readonly style="background:#e9ecef; font-weight:bold; color:var(--danger);"></div>
         </div>
-        
-        <label>Reste à Payer (Modifiable)</label>
-        <input id="reste" type="number" min="0" placeholder="0">
 
-        <!-- BOUTON D'ENREGISTREMENT -->
-        <button class="btn btn-success" id="nextBtn" style="margin-top:14px;">➕ Enregistrer l'élève</button>
+        <!-- BOUTON ENREGISTRER -->
+        <button class="btn btn-success" id="nextBtn" style="margin-top:14px;">➕ Enregistrer le paiement</button>
       </div>
 
       <!-- COLONNE APERÇU ET IMPRESSION -->
@@ -320,10 +359,8 @@
           <div class="receipt" id="preview"></div>
         </div>
 
-        <!-- IMPRESSION STANDARD PC ET MOBILE -->
         <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimer / PDF (Standard PC/Mobile)</button>
         <button class="btn btn-secondary" id="printBtn">📱 Partager vers App Thermique</button>
-        <button class="btn btn-secondary" onclick="printRawBTDirect()">⚡ Impression Directe RawBT (Android)</button>
         <button class="btn btn-warning" id="downloadBtn">📥 Télécharger l'image (PNG)</button>
         <button class="btn btn-success" id="shareBtn" style="background:#25D366;">📲 Partager sur WhatsApp</button>
         <div id="status"></div>
@@ -335,16 +372,24 @@
   <!-- BASE DE DONNÉES -->
   <div id="sec-bdd" style="display:none;">
     <div class="card">
-      <div class="card-title">🗃️ Base de Données</div>
+      <div class="card-title">🗃️ Base de Données des Élèves</div>
       
       <label>Recherche par nom :</label>
       <input id="searchName" type="text" placeholder="Tapez un nom..." oninput="renderDatabaseTable()">
 
       <div class="row" style="margin-top:5px;">
         <div>
+          <label>Filtrer par École :</label>
+          <select id="filterEcole" onchange="renderDatabaseTable()">
+            <option value="">Sélection école</option>
+            <option value="ÉCOLE A">ÉCOLE A</option>
+            <option value="ÉCOLE B">ÉCOLE B</option>
+          </select>
+        </div>
+        <div>
           <label>Filtrer par Classe :</label>
           <select id="filterClasse" onchange="renderDatabaseTable()">
-            <option value="ALL">-- Toutes --</option>
+            <option value="">Sélection classe</option>
             <option value="CP1">CP1</option>
             <option value="CP2">CP2</option>
             <option value="CE1">CE1</option>
@@ -364,9 +409,11 @@
             <tr>
               <th>N°</th>
               <th>Élève</th>
+              <th>Éc.</th>
               <th>Cl.</th>
-              <th>Payé</th>
+              <th>Total Payé</th>
               <th>Reste</th>
+              <th>Statut</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -388,14 +435,14 @@
     </div>
 
     <div class="card">
-      <div class="card-title">📚 Récapitulatif par Classe</div>
+      <div class="card-title">📚 Récapitulatif par Classe & École</div>
       <div style="overflow-x:auto;">
         <table class="db-table">
           <thead>
             <tr>
+              <th>École</th>
               <th>Classe</th>
               <th>Encaissé</th>
-              <th>Reste</th>
             </tr>
           </thead>
           <tbody id="statsClasseBody"></tbody>
@@ -408,10 +455,17 @@
   <!-- REGLAGES & SÉCURITÉ -->
   <div id="sec-param" style="display:none;">
     <div class="card">
-      <div class="card-title">Paramètres École & Impression</div>
+      <div class="card-title">⚙️ Réglages Général & École</div>
       
-      <label>Nom de l'école</label>
-      <input id="ecole" type="text" value="EPP 1 DE BANDOLÉ" oninput="render()">
+      <div class="config-box" style="border-left: 4px solid var(--primary);">
+        <label style="font-size:0.9rem; color:var(--primary);">💰 Montant Dû par défaut pour chaque élève (FCFA)</label>
+        <input type="number" id="cfg_default_montant" placeholder="Ex: 2000" min="0">
+        <small style="color:#6b7280; display:block; margin-top:4px;">Ce montant se remplira automatiquement à chaque nouveau reçu.</small>
+        <button class="btn btn-primary btn-sm" onclick="saveDefaultMontant()" style="margin-top:8px;">💾 Sauvegarder le Montant par défaut</button>
+      </div>
+
+      <label>Nom du Groupe Scolaire (Entête)</label>
+      <input id="nomGroupeScolaire" type="text" value="GROUPE SCOLAIRE BANDOLÉ" oninput="render()">
 
       <label>Largeur du papier d'impression</label>
       <select id="paperSize" onchange="updatePaperSize()">
@@ -428,8 +482,6 @@
     <!-- RESPONSABLE COGES -->
     <div class="card">
       <div class="card-title">👤 Président du COGES</div>
-      <p style="font-size:0.78rem; color:#6b7280; margin-top:0;">Informations affichées sur tous les reçus de paiement :</p>
-      
       <div class="config-box">
         <label>Nom & Prénoms du Président COGES</label>
         <input type="text" id="cfg_president_nom" placeholder="Ex: M. KOUASSI JEAN">
@@ -437,13 +489,12 @@
         <label style="margin-top:8px;">Contact Téléphone</label>
         <input type="text" id="cfg_president_contact" placeholder="Ex: 0102030405">
       </div>
-      
       <button class="btn btn-success" onclick="savePresidentConfig()">💾 Sauvegarder les infos COGES</button>
     </div>
 
-    <!-- SÉCURITÉ ACCÈS LOGIN & CODE PIN DE SUPPRESSION -->
+    <!-- SÉCURITÉ -->
     <div class="card">
-      <div class="card-title">🔒 Sécurité & Autorisation de Suppression</div>
+      <div class="card-title">🔒 Sécurité & Code PIN</div>
       
       <label>Activer la protection au démarrage (Login / Passe)</label>
       <select id="securityToggle" onchange="toggleSecurityMode()">
@@ -465,18 +516,35 @@
 
       <label>🔐 Code PIN d'Autorisation pour la Suppression (3 chiffres)</label>
       <input type="password" id="deletePinInput" maxlength="3" placeholder="Code à 3 chiffres (Ex: 123)">
-      <button class="btn btn-warning btn-sm" onclick="changeDeletePin()" style="margin-top:8px;">Changer le Code PIN de suppression</button>
+      <button class="btn btn-warning btn-sm" onclick="changeDeletePin()" style="margin-top:8px;">Changer le Code PIN</button>
     </div>
   </div>
 
 </main>
 
 <script>
-// LOGO DEFAULT SVG
 const DEFAULT_LOGO_SVG = `<svg class="receipt-logo-svg" viewBox="0 0 24 24" fill="#0d6efd" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>`;
 
-// GESTION DU DÉVERROUILLAGE & SÉCURITÉ AUTHENTIFICATION ET CODE PIN
-let appSecurity = JSON.parse(localStorage.getItem('coges_security') || '{"enabled": true, "user": "admin", "pass": "1234", "deletePin": "123"}');
+let appSecurity = JSON.parse(localStorage.getItem('coges_security') || '{"enabled": false, "user": "admin", "pass": "1234", "deletePin": "123"}');
+let defaultMontantDu = Number(localStorage.getItem('thermer_montant_du') || 2000);
+
+function showToast(message) {
+  const toast = document.getElementById('toastNotification');
+  const msgEl = document.getElementById('toastMessage');
+  msgEl.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3500);
+}
+
+function getSelectedEcole() {
+  return $('ecole').value.trim();
+}
+
+function getSelectedClasse() {
+  return $('classe').value.trim();
+}
 
 function checkSecurityOnStart() {
   const lockScreen = document.getElementById('lockScreen');
@@ -547,36 +615,46 @@ function changeAuthCredentials() {
 function changeDeletePin() {
   const pinVal = document.getElementById('deletePinInput').value.trim();
   if (!/^\d{3}$/.test(pinVal)) {
-    return alert("⚠️ Le code PIN de suppression doit être exactement composé de 3 chiffres.");
+    return alert("⚠️ Le code PIN de suppression doit être composé de 3 chiffres.");
   }
   appSecurity.deletePin = pinVal;
   localStorage.setItem('coges_security', JSON.stringify(appSecurity));
-  alert("✅ Code PIN de suppression mis à jour avec succès !");
+  alert("✅ Code PIN mis à jour avec succès !");
 }
 
 function verifyDeleteAuthorization() {
   const pinCode = appSecurity.deletePin || '123';
-  const inputPin = prompt("🔐 AUTORISATION REQUISE :\nVeuillez entrer le code PIN à 3 chiffres pour autoriser la suppression :");
+  const inputPin = prompt("🔐 AUTORISATION REQUISE :\nEntrez le code PIN à 3 chiffres :");
   if (inputPin === null) return false;
   if (inputPin.trim() === pinCode) {
     return true;
   } else {
-    alert("❌ Code PIN incorrect ! Action de suppression refusée.");
+    alert("❌ Code PIN incorrect !");
     return false;
   }
+}
+
+function saveDefaultMontant() {
+  const val = Number($('cfg_default_montant').value);
+  if (isNaN(val) || val < 0) return alert("Veuillez entrer un montant valide.");
+  defaultMontantDu = val;
+  localStorage.setItem('thermer_montant_du', defaultMontantDu);
+  $('total').value = defaultMontantDu;
+  lookupStudentStatus();
+  render();
+  alert("✅ Montant Dû par défaut sauvegardé (" + formatFCFA(defaultMontantDu) + " FCFA) !");
 }
 
 function scrollToPreview() {
   document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-// CONFIGURATION PRÉSIDENT DU COGES
 let presidentConfig = JSON.parse(localStorage.getItem('thermer_president') || '{"nom": "M. KOUASSI JEAN", "contact": "0102030405"}');
 
 function loadPresidentConfigUI() {
   $('cfg_president_nom').value = presidentConfig.nom || '';
   $('cfg_president_contact').value = presidentConfig.contact || '';
-  updatePresidentInputs();
+  $('cfg_default_montant').value = defaultMontantDu;
 }
 
 function savePresidentConfig() {
@@ -587,24 +665,8 @@ function savePresidentConfig() {
   
   presidentConfig = { nom, contact };
   localStorage.setItem('thermer_president', JSON.stringify(presidentConfig));
-  updatePresidentInputs();
   render();
   alert("✅ Informations du Président COGES enregistrées !");
-}
-
-function updatePresidentInputs() {
-  $('presidentCoges').value = presidentConfig.nom || '—';
-  $('contactCoges').value = presidentConfig.contact || '—';
-}
-
-// SERVICE WORKER PWA
-if ('serviceWorker' in navigator) {
-  const swCode = `
-    self.addEventListener('install', e => e.waitUntil(caches.open('coges-v3').then(c => c.addAll(['./']))));
-    self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
-  `;
-  const blob = new Blob([swCode], {type: 'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
 }
 
 function formatFCFA(num) {
@@ -633,24 +695,99 @@ $('date').value = new Date().toISOString().slice(0,10);
 
 let logoDataUrl = localStorage.getItem('thermer_logo') || '';
 let dbReceipts = JSON.parse(localStorage.getItem('thermer_db') || '[]');
-let currentIndex = -1;
 let editRecordId = null;
 
 function generateNextReceiptNum() {
   const year = new Date().getFullYear();
-  const nextSeq = dbReceipts.length + 1;
-  return `REC-${year}-${String(nextSeq).padStart(4, '0')}`;
+  const seq = dbReceipts.length + 1;
+  return `REC-${year}-${String(seq).padStart(4, '0')}`;
 }
 
-function updateStudentDatalist() {
-  const listEl = $('studentsList');
-  listEl.innerHTML = '';
-  const names = [...new Set(dbReceipts.map(r => r.nom))];
-  names.forEach(n => {
-    const opt = document.createElement('option');
-    opt.value = n;
-    listEl.appendChild(opt);
-  });
+function getStudentHistory(nom, ecole, classe) {
+  if (!nom) return { dejaPaye: 0, count: 0 };
+  const records = dbReceipts.filter(r => 
+    r.nom.toUpperCase() === nom.toUpperCase() && 
+    (ecole ? (r.ecole || 'ÉCOLE A').toUpperCase() === ecole.toUpperCase() : true) &&
+    (classe ? r.classe.toUpperCase() === classe.toUpperCase() : true) &&
+    r.id !== editRecordId
+  );
+  
+  const dejaPaye = records.reduce((sum, r) => sum + Number(r.payeCeJour !== undefined ? r.payeCeJour : r.paye || 0), 0);
+  return { dejaPaye, count: records.length, records };
+}
+
+function lookupStudentStatus() {
+  const nomInput = $('nom').value.trim().toUpperCase();
+  const ecoleInput = getSelectedEcole().toUpperCase();
+  const classeInput = getSelectedClasse().toUpperCase();
+  const box = $('studentStatusBox');
+  const nextBtn = $('nextBtn');
+
+  if (!nomInput) {
+    box.style.display = 'none';
+    box.className = 'student-status-box';
+    nextBtn.disabled = false;
+    nextBtn.textContent = "➕ Enregistrer le paiement";
+    recalculerTotaux();
+    return;
+  }
+
+  const history = getStudentHistory(nomInput, ecoleInput, classeInput);
+  box.style.display = 'block';
+
+  const totalFixe = Number($('total').value || defaultMontantDu);
+
+  if (history.count === 0) {
+    box.className = 'student-status-box nouveau';
+    box.innerHTML = `ℹ️ <b>Nouveau compte :</b> Aucun versement antérieur pour cet élève.`;
+    nextBtn.disabled = false;
+    nextBtn.textContent = "➕ Enregistrer le paiement";
+  } else if (history.dejaPaye >= totalFixe) {
+    box.className = 'student-status-box solde';
+    box.innerHTML = `✅ <b>Statut : DÉJÀ SOLDÉ</b><br>Cet élève a déjà réglé la totalité (${formatFCFA(history.dejaPaye)} FCFA). Aucun autre versement ne peut être enregistré.`;
+    nextBtn.disabled = true;
+    nextBtn.textContent = "❌ Déjà soldé (Paiement bloqué)";
+  } else {
+    box.className = 'student-status-box non-solde';
+    box.innerHTML = `⚠️ <b>Acomptes antérieurs : ${formatFCFA(history.dejaPaye)} FCFA</b><br>` +
+                    `Reste à payer avant versement : <b>${formatFCFA(totalFixe - history.dejaPaye)} FCFA</b>.`;
+    nextBtn.disabled = false;
+    nextBtn.textContent = "➕ Enregistrer le paiement";
+  }
+
+  recalculerTotaux();
+}
+
+function recalculerTotaux() {
+  const nomInput = $('nom').value.trim().toUpperCase();
+  const ecoleInput = getSelectedEcole().toUpperCase();
+  const classeInput = getSelectedClasse().toUpperCase();
+  const history = getStudentHistory(nomInput, ecoleInput, classeInput);
+
+  const totalFixe = Number($('total').value || defaultMontantDu);
+  const payeCeJour = Number($('paye').value || 0);
+
+  const totalCumule = history.dejaPaye + payeCeJour;
+  let reste = totalFixe - totalCumule;
+  if (reste < 0) reste = 0;
+
+  $('totalCumule').value = totalCumule;
+  $('reste').value = reste;
+  
+  // Vérification si le nouveau montant cumulé dépasse le montant dû
+  const nextBtn = $('nextBtn');
+  if (history.dejaPaye >= totalFixe) {
+    nextBtn.disabled = true;
+    nextBtn.textContent = "❌ Déjà soldé (Paiement bloqué)";
+  } else if (totalCumule > totalFixe) {
+    nextBtn.disabled = true;
+    nextBtn.textContent = "❌ Montant versé supérieur au reste dû";
+  } else if (nomInput && history.dejaPaye < totalFixe) {
+    nextBtn.disabled = false;
+    nextBtn.textContent = "➕ Enregistrer le paiement";
+  }
+
+  render();
 }
 
 function updatePaperSize() {
@@ -660,26 +797,37 @@ function updatePaperSize() {
 
 function renderDatabaseTable() {
   const tbody = $('dbTableBody');
-  const selectedClasse = $('filterClasse').value;
+  const selectedEcole = $('filterEcole').value.trim().toLowerCase();
+  const selectedClasse = $('filterClasse').value.trim().toLowerCase();
   const search = $('searchName').value.trim().toLowerCase();
   tbody.innerHTML = '';
 
   let filtered = dbReceipts;
-  if (selectedClasse !== 'ALL') {
-    filtered = filtered.filter(r => r.classe.toUpperCase() === selectedClasse);
+  if (selectedEcole) {
+    filtered = filtered.filter(r => (r.ecole || 'ÉCOLE A').toLowerCase().includes(selectedEcole));
+  }
+  if (selectedClasse) {
+    filtered = filtered.filter(r => r.classe.toLowerCase().includes(selectedClasse));
   }
   if (search) {
     filtered = filtered.filter(r => r.nom.toLowerCase().includes(search));
   }
 
   filtered.slice().reverse().forEach(r => {
+    const isSolde = Number(r.reste) === 0;
+    const badgeHtml = isSolde 
+      ? `<span style="color:var(--success); font-weight:bold;">🟢 SOLDÉ</span>` 
+      : `<span style="color:var(--danger); font-weight:bold;">🔴 NON SOLDÉ</span>`;
+
     tbody.innerHTML += `
       <tr>
         <td><small>${r.recuNum || '—'}</small></td>
         <td><b>${r.nom}</b></td>
-        <td>${r.classe}</td>
-        <td>${formatFCFA(r.paye)}</td>
+        <td><small>${r.ecole || '—'}</small></td>
+        <td><b>${r.classe || '—'}</b></td>
+        <td>${formatFCFA(r.totalCumule || r.paye)}</td>
         <td>${formatFCFA(r.reste)}</td>
+        <td>${badgeHtml}</td>
         <td class="actions-cell">
           <button class="btn btn-secondary btn-sm" onclick="editReceipt(${r.id})">✏️</button>
           <button class="btn btn-danger btn-sm" onclick="deleteReceipt(${r.id})">🗑️</button>
@@ -693,9 +841,13 @@ function deleteReceipt(id) {
   if (verifyDeleteAuthorization()) {
     dbReceipts = dbReceipts.filter(r => r.id !== id);
     localStorage.setItem('thermer_db', JSON.stringify(dbReceipts));
-    updateStudentDatalist();
     renderDatabaseTable();
     updateStatsUI();
+    lookupStudentStatus();
+    if (editRecordId === null) {
+      $('recuNum').value = generateNextReceiptNum();
+      render();
+    }
   }
 }
 
@@ -703,24 +855,53 @@ function editReceipt(id) {
   const r = dbReceipts.find(item => item.id === id);
   if (!r) return;
   editRecordId = id;
-  $('recuNum').value = r.recuNum || generateNextReceiptNum();
+  $('recuNum').value = r.recuNum;
   $('nom').value = r.nom;
-  $('classe').value = r.classe;
+  $('ecole').value = r.ecole || '';
+  $('classe').value = r.classe || '';
   $('date').value = r.date;
-  $('total').value = r.total || '';
-  $('paye').value = r.paye;
-  $('reste').value = r.reste;
-  resteModifieManuellement = true;
+  $('total').value = r.total || defaultMontantDu;
+  $('paye').value = r.payeCeJour !== undefined ? r.payeCeJour : r.paye;
   showSection('creer');
-  render();
+  lookupStudentStatus();
 }
 
 function saveToDatabase() {
   const nomActuel = $('nom').value.trim().toUpperCase();
-  const payeActuel = Number($('paye').value || 0);
   const dateActuelle = $('date').value;
+  const ecoleActuelle = getSelectedEcole();
+  const classeActuelle = getSelectedClasse();
+  const payeCeJour = Number($('paye').value || 0);
+  const totalFixe = Number($('total').value || defaultMontantDu);
+  const currentRecuNum = $('recuNum').value.trim();
 
   if (!nomActuel || !dateActuelle) return false;
+
+  const history = getStudentHistory(nomActuel, ecoleActuelle, classeActuelle);
+  
+  // BLOQUAGE STRICT DE L'ENREGISTREMENT SI DÉJÀ SOLDÉ OU DÉPASSEMENT
+  if (history.dejaPaye >= totalFixe) {
+    alert("🛑 Opération impossible : Cet élève est DÉJÀ SOLDÉ.");
+    return false;
+  }
+
+  if ((history.dejaPaye + payeCeJour) > totalFixe) {
+    alert(`🛑 Opération impossible : Le montant total verse (${formatFCFA(history.dejaPaye + payeCeJour)} FCFA) depasse le montant du (${formatFCFA(totalFixe)} FCFA).`);
+    return false;
+  }
+
+  const exists = dbReceipts.some(r => r.recuNum === currentRecuNum && r.id !== editRecordId);
+  if (exists) {
+    alert(`⚠️ Le numéro de reçu "${currentRecuNum}" a DÉJÀ été enregistré dans la base de données.\n\n` +
+          `Un nouveau numéro va être attribué.`);
+    $('recuNum').value = generateNextReceiptNum();
+    render();
+    return false;
+  }
+
+  const totalCumule = history.dejaPaye + payeCeJour;
+  let reste = totalFixe - totalCumule;
+  if (reste < 0) reste = 0;
 
   if (editRecordId !== null) {
     const idx = dbReceipts.findIndex(r => r.id === editRecordId);
@@ -729,107 +910,115 @@ function saveToDatabase() {
         ...dbReceipts[idx],
         date: dateActuelle,
         nom: nomActuel,
-        classe: $('classe').value.toUpperCase(),
-        total: Number($('total').value || 0),
-        paye: payeActuel,
-        reste: Number($('reste').value || 0),
-        president: $('presidentCoges').value.trim().toUpperCase(),
-        contact: $('contactCoges').value.trim()
+        ecole: ecoleActuelle,
+        classe: classeActuelle,
+        total: totalFixe,
+        payeCeJour: payeCeJour,
+        paye: totalCumule,
+        totalCumule: totalCumule,
+        reste: reste,
+        president: (presidentConfig.nom || '—').toUpperCase(),
+        contact: presidentConfig.contact || '—'
       };
       editRecordId = null;
     }
   } else {
     const receipt = {
       id: Date.now(),
-      recuNum: $('recuNum').value || generateNextReceiptNum(),
+      recuNum: currentRecuNum,
       date: dateActuelle,
       nom: nomActuel,
-      classe: $('classe').value.toUpperCase() || '—',
-      total: Number($('total').value || 0),
-      paye: payeActuel,
-      reste: Number($('reste').value || 0),
-      president: $('presidentCoges').value.trim().toUpperCase() || '—',
-      contact: $('contactCoges').value.trim() || '—'
+      ecole: ecoleActuelle,
+      classe: classeActuelle,
+      total: totalFixe,
+      payeCeJour: payeCeJour,
+      paye: totalCumule,
+      totalCumule: totalCumule,
+      reste: reste,
+      president: (presidentConfig.nom || '—').toUpperCase(),
+      contact: presidentConfig.contact || '—'
     };
     dbReceipts.push(receipt);
   }
 
+  dbReceipts.forEach(r => {
+    if (r.nom.toUpperCase() === nomActuel && 
+        (r.ecole || '').toUpperCase() === ecoleActuelle.toUpperCase() && 
+        r.classe.toUpperCase() === classeActuelle.toUpperCase()) {
+      r.reste = reste;
+      r.totalCumule = totalCumule;
+    }
+  });
+
   localStorage.setItem('thermer_db', JSON.stringify(dbReceipts));
-  updateStudentDatalist();
+  
+  // RÉINITIALISATION DU CHAMP "MONTANT VERSÉ CE JOUR" ET MISE À JOUR
+  $('paye').value = '';
+  $('recuNum').value = generateNextReceiptNum();
+  lookupStudentStatus();
+
   return true;
 }
 
 function resetForm() {
-  currentIndex = -1;
   editRecordId = null;
   $('recuNum').value = generateNextReceiptNum();
   $('nom').value = '';
-  $('total').value = '';
+  $('ecole').value = '';
+  $('classe').value = '';
+  $('total').value = defaultMontantDu;
   $('paye').value = '';
+  $('totalCumule').value = '';
   $('reste').value = '';
   $('date').value = new Date().toISOString().slice(0,10);
-  resteModifieManuellement = false;
+  lookupStudentStatus();
   render();
 }
 
 $('nextBtn').addEventListener('click', () => {
   const nom = $('nom').value.trim();
+  const ecoleStr = getSelectedEcole();
+  const classeStr = getSelectedClasse();
   const dateVal = $('date').value;
   const payeVal = $('paye').value;
   const totalVal = $('total').value;
 
   if (!nom) return alert("Veuillez saisir le nom de l'élève.");
+  if (!ecoleStr) return alert("Veuillez sélectionner l'école.");
+  if (!classeStr) return alert("Veuillez sélectionner la classe de l'élève.");
   if (!dateVal) return alert("Veuillez sélectionner une date valide.");
   if (totalVal === '' || Number(totalVal) <= 0) return alert("Veuillez saisir un montant dû valide.");
-  if (payeVal === '' || Number(payeVal) < 0) return alert("Veuillez saisir un montant payé valide.");
-
-  if (!resteModifieManuellement) {
-    const diff = Number(totalVal) - Number(payeVal);
-    $('reste').value = diff < 0 ? 0 : diff;
-  }
+  if (payeVal === '' || Number(payeVal) <= 0) return alert("Veuillez saisir le montant du versement du jour.");
 
   if (saveToDatabase()) {
+    const statusMsg = Number($('reste').value) === 0 ? "🟢 ÉLÈVE TOTALEMENT SOLDÉ !" : "⚠️ Versement enregistré.";
+    showToast(`✓ Versement enregistré pour ${nom} (${ecoleStr} - ${classeStr}) ! ${statusMsg}`);
+    
     const statusEl = $('status');
-    statusEl.textContent = "✅ Élève enregistré dans la base de données !";
+    statusEl.textContent = "✅ Paiement enregistré avec succès dans la base !";
     statusEl.style.color = "green";
     setTimeout(() => { if (statusEl.textContent.includes("enregistré")) statusEl.textContent = ""; }, 3500);
   }
 });
 
-let resteModifieManuellement = false;
-$('reste').addEventListener('input', (e) => { 
-  if (e.target.value === '') {
-    resteModifieManuellement = false;
-    recalculerReste();
-  } else {
-    resteModifieManuellement = true; 
-  }
-  render(); 
-});
-
-function recalculerReste() {
-  if (!resteModifieManuellement && $('total').value !== '') {
-    const diff = Number($('total').value || 0) - Number($('paye').value || 0);
-    $('reste').value = diff < 0 ? 0 : diff;
-  }
-}
-
 ['total', 'paye'].forEach(id => {
-  $(id).addEventListener('input', () => { recalculerReste(); render(); });
+  $(id).addEventListener('input', () => { recalculerTotaux(); });
 });
 
-['nom', 'classe', 'date', 'ecole'].forEach(id => {
+['nom', 'ecole', 'classe', 'date', 'nomGroupeScolaire'].forEach(id => {
   const el = $(id); if(el) el.addEventListener('input', render);
 });
 
 function render() {
-  const president = $('presidentCoges').value || '—';
-  const contact = $('contactCoges').value || '—';
+  const president = presidentConfig.nom || '—';
+  const contact = presidentConfig.contact || '—';
   const nom = $('nom').value.trim().toUpperCase() || '—';
-  const classe = $('classe').value.trim().toUpperCase() || '—';
-  const ecole = $('ecole').value.trim() || '—';
+  const ecole = getSelectedEcole().toUpperCase() || '—';
+  const classe = getSelectedClasse().toUpperCase() || '—';
+  const groupeScolaire = $('nomGroupeScolaire').value.trim() || 'GROUPE SCOLAIRE BANDOLÉ';
   const recuNum = $('recuNum').value || generateNextReceiptNum();
-  const paye = formatFCFA($('paye').value || 0);
+  
+  const payeCeJour = formatFCFA($('paye').value || 0);
   const resteVal = Number($('reste').value || 0);
   const reste = formatFCFA(resteVal);
 
@@ -839,20 +1028,22 @@ function render() {
 
   const statusBadge = resteVal === 0 
     ? `<div class="badge-status status-solder">[ SOLDÉ ]</div>`
-    : `<div class="badge-status status-avance">[ AVANCE ]</div>`;
+    : `<div class="badge-status status-avance">[ AVANCE / NON SOLDÉ ]</div>`;
   
   $('preview').innerHTML = `
     ${logoMarkup}
-    <div class="receipt-center receipt-bold">${ecole}</div>
-    <div class="receipt-center">REÇU COGES</div>
+    <div class="receipt-center receipt-bold">${groupeScolaire}</div>
+    <div class="receipt-center receipt-bold">${ecole !== '—' ? ecole : ''}</div>
+    <div class="receipt-center">REÇU DE PAIEMENT COGES</div>
     <div class="receipt-center"><small>${recuNum}</small></div>
     --------------------------------
     <div><b>Élève  :</b> ${nom}</div>
+    <div><b>École  :</b> ${ecole}</div>
     <div><b>Classe :</b> ${classe}</div>
     <div><b>Date   :</b> ${$('date').value || '—'}</div>
     --------------------------------
-    <div class="receipt-bold">PAYÉ   : ${paye} FCFA</div>
-    <div class="receipt-bold">RESTE  : ${reste} FCFA</div>
+    <div><b>Montant Versé ce jour :</b> ${payeCeJour} FCFA</div>
+    <div class="receipt-bold">RESTE À PAYER      : ${reste} FCFA</div>
     ${statusBadge}
     --------------------------------
     <div class="receipt-center">Président COGES: ${president}</div>
@@ -867,80 +1058,62 @@ function resetLogo() {
   alert("Logo par défaut restauré.");
 }
 
-function printRawBTDirect() {
-  const txt = `${$('ecole').value}
-RECU COGES - ${$('recuNum').value}
---------------------------------
-Eleve  : ${$('nom').value.toUpperCase() || '—'}
-Classe : ${$('classe').value.toUpperCase() || '—'}
-Date   : ${$('date').value || '—'}
---------------------------------
-PAYE   : ${Number($('paye').value || 0)} FCFA
-RESTE  : ${Number($('reste').value || 0)} FCFA
-Statut : ${Number($('reste').value || 0) === 0 ? 'SOLDE' : 'AVANCE'}
---------------------------------
-President COGES: ${$('presidentCoges').value.toUpperCase()}
-Contact: ${$('contactCoges').value}
-
-
-`;
-  const intentUrl = "intent:#Intent;scheme=rawbt;package=ru.is210.rawbt;action=android.intent.action.VIEW;S.txt=" + encodeURIComponent(txt) + ";end;";
-  window.location.href = intentUrl;
-}
-
 function exportClassePDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
-  const selectedClasse = $('filterClasse').value;
+  const selectedEcole = $('filterEcole').value.trim().toLowerCase();
+  const selectedClasse = $('filterClasse').value.trim().toLowerCase();
 
-  const filteredData = selectedClasse === 'ALL' 
-    ? dbReceipts 
-    : dbReceipts.filter(r => r.classe.toUpperCase() === selectedClasse);
+  let filteredData = dbReceipts;
+  if (selectedEcole) filteredData = filteredData.filter(r => (r.ecole || '').toLowerCase().includes(selectedEcole));
+  if (selectedClasse) filteredData = filteredData.filter(r => r.classe.toLowerCase().includes(selectedClasse));
 
   if (filteredData.length === 0) return alert("Aucune donnée à exporter.");
 
   doc.setFontSize(14);
-  doc.text($('ecole').value, 14, 15);
+  doc.text($('nomGroupeScolaire').value, 14, 15);
   doc.setFontSize(11);
-  doc.text(`Rapport des paiements COGES - Classe: ${selectedClasse}`, 14, 22);
+  doc.text(`Rapport COGES - ${selectedEcole.toUpperCase() || 'Toutes Écoles'} - Classe: ${selectedClasse.toUpperCase() || 'Toutes'}`, 14, 22);
   doc.text(`Généré le : ${new Date().toLocaleDateString('fr-FR')}`, 14, 28);
 
-  const tableColumn = ["N° Reçu", "Date", "Élève", "Classe", "Payé (FCFA)", "Reste (FCFA)"];
+  const tableColumn = ["N° Reçu", "Date", "Élève", "École", "Classe", "Total Payé", "Reste", "Statut"];
   const tableRows = [];
-  let totalPaye = 0; let totalReste = 0;
 
   filteredData.forEach(r => {
     tableRows.push([
-      r.recuNum || '—', r.date, r.nom, r.classe,
-      formatFCFA(r.paye), formatFCFA(r.reste)
+      r.recuNum || '—', r.date, r.nom, r.ecole || '—', r.classe || '—',
+      formatFCFA(r.totalCumule || r.paye) + " FCFA", 
+      formatFCFA(r.reste) + " FCFA",
+      Number(r.reste) === 0 ? "SOLDE" : "NON SOLDE"
     ]);
-    totalPaye += r.paye; totalReste += r.reste;
   });
-
-  tableRows.push(["TOTAL", "", "", "", formatFCFA(totalPaye) + " FCFA", formatFCFA(totalReste) + " FCFA"]);
 
   doc.autoTable({
     head: [tableColumn], body: tableRows, startY: 33, theme: 'grid',
     headStyles: { fillColor: [13, 110, 253] }
   });
 
-  doc.save(`Rapport_COGES_${selectedClasse}_${new Date().toISOString().slice(0,10)}.pdf`);
+  doc.save(`Rapport_COGES_${selectedEcole || 'Global'}_${selectedClasse || 'Toutes'}.pdf`);
 }
 
 function exportClasseCSV() {
-  const selectedClasse = $('filterClasse').value;
-  const filteredData = selectedClasse === 'ALL' ? dbReceipts : dbReceipts.filter(r => r.classe.toUpperCase() === selectedClasse);
+  const selectedEcole = $('filterEcole').value.trim().toLowerCase();
+  const selectedClasse = $('filterClasse').value.trim().toLowerCase();
+
+  let filteredData = dbReceipts;
+  if (selectedEcole) filteredData = filteredData.filter(r => (r.ecole || '').toLowerCase().includes(selectedEcole));
+  if (selectedClasse) filteredData = filteredData.filter(r => r.classe.toLowerCase().includes(selectedClasse));
 
   if(filteredData.length === 0) return alert("Aucune donnée à exporter.");
 
-  let csvContent = "data:text/csv;charset=utf-8,RecuNum;Date;Eleve;Classe;Paye;Reste;President;Contact\n";
+  let csvContent = "data:text/csv;charset=utf-8,RecuNum;Date;Eleve;Ecole;Classe;TotalPaye;Reste;Statut\n";
   filteredData.forEach(r => {
-    csvContent += `${r.recuNum || ''};${r.date};${r.nom};${r.classe};${r.paye};${r.reste};${r.president || ''};${r.contact || ''}\n`;
+    csvContent += `${r.recuNum || ''};${r.date};${r.nom};${r.ecole || ''};${r.classe || ''};${r.totalCumule || r.paye};${r.reste};${Number(r.reste) === 0 ? 'SOLDE' : 'NON SOLDE'}\n`;
   });
 
   const a = document.createElement('a');
   a.setAttribute("href", encodeURI(csvContent));
-  a.setAttribute("download", `Recus_COGES_${selectedClasse}.csv`);
+  a.setAttribute("download", `Recus_COGES_${selectedEcole || 'Global'}_${selectedClasse || 'Toutes'}.csv`);
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
@@ -948,9 +1121,10 @@ function clearDatabase() {
   if (verifyDeleteAuthorization()) {
     dbReceipts = [];
     localStorage.removeItem('thermer_db');
-    updateStudentDatalist();
     renderDatabaseTable();
     updateStatsUI();
+    lookupStudentStatus();
+    resetForm();
   }
 }
 
@@ -999,7 +1173,7 @@ $('shareBtn').addEventListener('click', async () => {
           text: `Reçu COGES de ${$('nom').value.trim() || 'Élève'}`
         });
       } else {
-        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent('REÇU COGES\nÉlève: ' + $('nom').value + '\nPayé: ' + $('paye').value + ' FCFA\nPrésident COGES: ' + $('presidentCoges').value)}`;
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent('REÇU COGES\nÉlève: ' + $('nom').value + '\nÉcole: ' + $('ecole').value + '\nClasse: ' + $('classe').value + '\nVersé ce jour: ' + $('paye').value + ' FCFA\nReste: ' + $('reste').value + ' FCFA')}`;
         window.open(url, '_blank');
       }
     });
@@ -1023,9 +1197,9 @@ $('printBtn').addEventListener('click', async () => {
           await navigator.share({
             files: [file],
             title: 'Imprimer Reçu COGES',
-            text: 'Choisissez votre application d’impression (RawBT...)'
+            text: 'Choisissez votre application d’impression'
           });
-          statusEl.textContent = "✅ Transmis à l'application d'impression !";
+          statusEl.textContent = "✅ Transmis à l'application !";
           statusEl.style.color = "green";
           return;
         } catch (e) {
@@ -1033,7 +1207,7 @@ $('printBtn').addEventListener('click', async () => {
           return;
         }
       }
-      printRawBTDirect();
+      alert("Option d'impression non supportée sur cet appareil. Utilisez l'option Imprimer/PDF.");
     });
   } catch (err) {
     statusEl.textContent = "Erreur : " + err.message;
@@ -1042,8 +1216,15 @@ $('printBtn').addEventListener('click', async () => {
 });
 
 function updateStatsUI() {
-  const totalPaye = dbReceipts.reduce((sum, r) => sum + Number(r.paye || 0), 0);
-  const totalReste = dbReceipts.reduce((sum, r) => sum + Number(r.reste || 0), 0);
+  const totalPaye = dbReceipts.reduce((sum, r) => sum + Number(r.payeCeJour !== undefined ? r.payeCeJour : r.paye || 0), 0);
+  
+  const uniqueStudents = {};
+  dbReceipts.forEach(r => {
+    const key = `${r.nom.toUpperCase()}_${(r.ecole || '').toUpperCase()}_${r.classe.toUpperCase()}`;
+    uniqueStudents[key] = r;
+  });
+
+  const totalReste = Object.values(uniqueStudents).reduce((sum, r) => sum + Number(r.reste || 0), 0);
   const totalAttendu = totalPaye + totalReste;
 
   $('statCount').textContent = dbReceipts.length;
@@ -1051,19 +1232,23 @@ function updateStatsUI() {
   $('statTotalPaye').textContent = formatFCFA(totalPaye);
   $('statTotalReste').textContent = formatFCFA(totalReste);
 
-  const classes = ['CP1', 'CP2', 'CE1', 'CE2', 'CM1', 'CM2'];
+  const classesMap = {};
+  dbReceipts.forEach(r => {
+    const key = `${r.ecole || '—'} - ${r.classe || 'Inconnue'}`;
+    if (!classesMap[key]) classesMap[key] = { paye: 0 };
+    classesMap[key].paye += Number(r.payeCeJour !== undefined ? r.payeCeJour : r.paye || 0);
+  });
+
   const tbody = $('statsClasseBody');
   tbody.innerHTML = '';
 
-  classes.forEach(c => {
-    const list = dbReceipts.filter(r => r.classe.toUpperCase() === c);
-    const p = list.reduce((sum, r) => sum + Number(r.paye || 0), 0);
-    const r = list.reduce((sum, r) => sum + Number(r.reste || 0), 0);
+  Object.keys(classesMap).sort().forEach(k => {
+    const [ec, cl] = k.split(' - ');
     tbody.innerHTML += `
       <tr>
-        <td><b>${c}</b></td>
-        <td style="color:var(--success);">${formatFCFA(p)} FCFA</td>
-        <td style="color:var(--danger);">${formatFCFA(r)} FCFA</td>
+        <td><b>${ec}</b></td>
+        <td><b>${cl}</b></td>
+        <td style="color:var(--success);">${formatFCFA(classesMap[k].paye)} FCFA</td>
       </tr>
     `;
   });
@@ -1080,6 +1265,7 @@ function exportBackupManuelle() {
     thermer_db: localStorage.getItem('thermer_db'),
     thermer_president: localStorage.getItem('thermer_president'),
     thermer_logo: localStorage.getItem('thermer_logo'),
+    thermer_montant_du: localStorage.getItem('thermer_montant_du'),
     coges_security: localStorage.getItem('coges_security'),
     exportDate: new Date().toISOString()
   };
@@ -1103,6 +1289,7 @@ function importBackup() {
         if (content.thermer_db) localStorage.setItem('thermer_db', content.thermer_db);
         if (content.thermer_president) localStorage.setItem('thermer_president', content.thermer_president);
         if (content.thermer_logo) localStorage.setItem('thermer_logo', content.thermer_logo);
+        if (content.thermer_montant_du) localStorage.setItem('thermer_montant_du', content.thermer_montant_du);
         if (content.coges_security) localStorage.setItem('coges_security', content.coges_security);
         alert("Sauvegarde restaurée avec succès !"); 
         location.reload();
@@ -1115,10 +1302,9 @@ function importBackup() {
 
 window.addEventListener('load', () => {
   checkSecurityOnStart();
-  updatePresidentInputs();
   loadPresidentConfigUI();
+  $('total').value = defaultMontantDu;
   $('recuNum').value = generateNextReceiptNum();
-  updateStudentDatalist();
   render();
 });
 </script>
